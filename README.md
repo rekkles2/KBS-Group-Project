@@ -1,11 +1,15 @@
-# Knowledge Graph
+# PAT-KG: Temporal Knowledge Graph and Synthetic Edge Injection
 
-**Group member:** Myeongchun Kim · Gahyeon Kim · Jiahang Li
+**Group members:** Myeongchun Kim · Gahyeon Kim · Jiahang Li
 
 A research dataset built from the [PAT-Questions](https://aclanthology.org/2024.findings-acl.777/) temporal question-answering annotations. It provides a directed, multi-relational knowledge graph (KG) with Wikidata-linked entities, typed relations, three annotation snapshots, and the original question-answer evidence. Alongside the original graph, this repository provides a **10% synthetically augmented KG** constructed through type-preserving hub-entity swapping, with explicit injection labels and provenance.
 
 **QA snapshots:** `Dec2021` · `Dec2023` · `March2024`  
 **Dataset format:** JSON + CSV · **Core tools:** Python 3.10+ (standard library; no API key or graph database required)
+
+[Quick start](#quick-start) · [Data schema](SCHEMA.md) · [Snapshot export](display/README.md) · [Reports](hub_injection/reports/README.md) · [Maintenance](docs/MAINTENANCE.md)
+
+This repository contains datasets, generation and validation code, and snapshot-export utilities. The interactive explorer linked in the GitHub repository's About section is hosted separately; its application source and deployment are outside this checkout.
 
 ## Dataset overview
 
@@ -15,7 +19,7 @@ A research dataset built from the [PAT-Questions](https://aclanthology.org/2024.
 | Original relation triples | 7,737 |
 | Synthetically injected triples | **774** |
 | Augmented relation triples | **8,511** |
-| Injection budget | **10% of original edges** (774 / 7,737) |
+| Injection budget | **10% target**, rounded to 774 edges (10.003877% of 7,737) |
 | Wikidata relation properties | 20 |
 | General entity types | 35 |
 | Original QA annotation records | 18,436 |
@@ -67,15 +71,27 @@ Source QA evidence remains attached to **original** edges. For synthetic edges, 
 
 ## Quick start
 
-Run these commands from the repository root with Python 3.10 or later. Core generation, tests, and snapshot export use the standard library and run offline.
+Clone the repository, or open your existing checkout:
+
+```sh
+git clone https://github.com/rekkles2/KBS-Group-poroject.git
+cd KBS-Group-poroject
+```
+
+Run the following commands from the repository root with Python 3.10 or later. Generation, tests, verification and snapshot export use the standard library and run offline. No package installation is needed. Single-line Python commands work in PowerShell and POSIX shells.
+
+**Verify the delivered files:**
+
+```sh
+python tools/verify_repository.py
+```
+
+This checks file hashes, preserved graph records, CSV alignment, snapshot visibility, Python syntax and local Markdown links. It does not run the test suite or verify factual truth.
 
 **Export a snapshot for graph visualization:**
 
 ```sh
-python display/export_snapshot.py \
-  --graph pat_kg_poisoned_10pct.json \
-  --snapshot Dec2023 \
-  --output snapshot_Dec2023.json
+python display/export_snapshot.py --graph pat_kg_poisoned_10pct.json --snapshot Dec2023 --output snapshot_Dec2023.json
 ```
 
 The exported JSON wraps visible nodes and edges with display classes (original observation, synthetic overlay activation, and synthetic relation). The script produces **data for a renderer**, not an interactive website.
@@ -83,32 +99,25 @@ The exported JSON wraps visible nodes and edges with display classes (original o
 **Reproduce the 10% injection in a separate directory:**
 
 ```sh
-python hub_injection/run_task1.py \
-  --graph original_KG/pat_kg_merged.json \
-  --entities original_KG/entity_id_value_type.csv \
-  --work-dir regenerated \
-  --injection-ratio 0.10 \
-  --seed 42 \
-  --top-k-max 20 \
-  --hub-metric total_degree
+python hub_injection/run_task1.py --graph original_KG/pat_kg_merged.json --entities original_KG/entity_id_value_type.csv --work-dir regenerated --injection-ratio 0.10 --seed 42 --top-k-max 20 --hub-metric total_degree
 ```
 
-This regenerates `regenerated/outputs/` and `regenerated/reports/` without modifying the original data. The initial Top-K maximum is a *soft* threshold: the implementation can expand its per-type candidate pools if needed. For full regeneration, environment-specific reproducibility details, and checksum validation, see the [reproduction guide](hub_injection/reports/REPRODUCTION_v2.md).
+This writes `regenerated/outputs/` and `regenerated/reports/` without modifying the delivered data. Use a fresh output directory for each independent run. The initial Top-K maximum is a *soft* threshold: the implementation can expand its per-type candidate pools if needed. Always provide the input paths explicitly in this checkout. See [maintenance notes](docs/MAINTENANCE.md) for checksum conventions and the [archived reproduction guide](hub_injection/reports/REPRODUCTION_v2.md) for the portable-ZIP protocol.
 
 **Run the automated tests (macOS/Linux):**
 
 ```sh
-PAT_KG_INPUT_DIR="$(pwd)/original_KG" python hub_injection/run_tests.py
+PAT_KG_INPUT_DIR="$PWD/original_KG" python -m unittest discover -s hub_injection/tests -t hub_injection -v
 ```
 
 **Run the automated tests (Windows PowerShell):**
 
 ```powershell
 $env:PAT_KG_INPUT_DIR = (Resolve-Path .\original_KG).Path
-python .\hub_injection\run_tests.py
+python -m unittest discover -s hub_injection/tests -t hub_injection -v
 ```
 
-The archived revised release reports **53/53 passing tests**. These tests check construction, data consistency, temporal overlays, and reproducibility; they are **not** a factual-truth or KGQA attack-success evaluation.
+The existing suite contains **53 tests**, including real-data regeneration in three fresh Python processes with seeds 42, 42 and 43. Direct `unittest` invocation preserves the archived release logs. These tests check construction, data consistency, temporal overlays and reproducibility; they do not evaluate factual truth or knowledge-graph question-answering (KGQA) attack success.
 
 ## Temporal snapshots
 
@@ -136,7 +145,11 @@ The archived revised release reports **53/53 passing tests**. These tests check 
 | [`hub_injection/`](hub_injection/) | Generation scripts, tests, analysis tools, and archived technical reports |
 | [`hub_injection/reports/FINAL_REPORT_v2.md`](hub_injection/reports/FINAL_REPORT_v2.md) | Revision handoff, independent checks, and research limitations |
 | [`hub_injection/reports/revision_audit/`](hub_injection/reports/revision_audit/) | Factual-status audit, structural diagnostics, figures, and validation artifacts |
-| [`DELIVERY_MANIFEST.json`](DELIVERY_MANIFEST.json) | Minimal-package file sizes and SHA-256 checksums |
+| [`DELIVERY_MANIFEST.json`](DELIVERY_MANIFEST.json) | Repository file inventory, sizes and SHA-256 checksums |
+| [`tools/verify_repository.py`](tools/verify_repository.py) | Offline verifier for the current repository layout |
+| [`docs/MAINTENANCE.md`](docs/MAINTENANCE.md) | Reproduction, inventory maintenance and historical-tool boundaries |
+
+Root-level data files are downstream entry points. Their copies in `hub_injection/outputs/` are retained for pipeline tooling and provenance; the verifier checks that they agree. Historical reports remain under `hub_injection/reports/` and are organized by the [report index](hub_injection/reports/README.md).
 
 **Join conventions:** `nodes[].id` and the CSV `qid` identify the same Wikidata entity. `edges[].source`, `relation`, and `target` form a directed triple. `edge_injection_labels.csv` uses zero-based `edge_index`, which matches the current `edges` array **only while its ordering is preserved**. For graph counts, distinguish original-source `metadata.stats` from augmented `metadata.task1_hub_injection.augmented_statistics`.
 
@@ -160,4 +173,4 @@ A bounded external Wikidata lookup covered 86 of 774 injected claims, without es
 
 The original QA data and construction context are based on [PAT-Questions: A Self-Updating Benchmark for Present-Anchored Temporal Question-Answering](https://aclanthology.org/2024.findings-acl.777/). The injection design is informed by [LogicPoison: Logical Attacks on Graph Retrieval-Augmented Generation](https://aclanthology.org/2026.acl-long.252/), but the **additive, pair-local** graph transformation is this project's implementation choice. Item and property identifiers refer to [Wikidata](https://www.wikidata.org/).
 
-This repository does not currently declare a project-wide dataset or code license. Check the terms of the upstream datasets and the permissions of the respective rights holders before redistribution or reuse; do not assume that linked sources grant unrestricted reuse.
+The repository includes an [MIT License](LICENSE) for covered project code. PAT-Questions annotations and Wikidata-derived content remain subject to their applicable upstream terms. Preserve attribution and check those terms before redistributing data; the project license does not replace third-party rights.

@@ -1,0 +1,14 @@
+# Preserve delivered bytes: checksums include original line endings.
+# Do not normalize existing datasets, source files, or historical evidence.
+* -text
+
+# New repository documentation and maintenance scripts use LF.
+/README.md text eol=lf
+/SCHEMA.md text eol=lf
+/.gitignore text eol=lf
+/.gitattributes text eol=lf
+/docs/*.md text eol=lf
+/tools/*.py text eol=lf
+/display/README.md text eol=lf
+/hub_injection/README.md text eol=lf
+/hub_injection/reports/README.md text eol=lf

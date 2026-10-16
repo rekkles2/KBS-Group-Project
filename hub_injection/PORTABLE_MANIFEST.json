@@ -85,8 +85,8 @@
       "sha256": "9860778471610593bf45d97096002abe321cb6417f583a41108408c26b092fcf"
     },
     "README.md": {
-      "bytes": 8719,
-      "sha256": "58f6259d38bbd945768a81f0204535c354d09529d20353d7ba0fc67126a3e455"
+      "bytes": 9305,
+      "sha256": "7f0b9456023138c24a43fc8abb82c8ef037eec23af653ad023cb03ab4b5efa96"
     },
     "reports/01_original_dataset_audit.md": {
       "bytes": 2345,
@@ -435,6 +435,10 @@
     "reports/original_statistics.json": {
       "bytes": 4452,
       "sha256": "43cac208cf16f61739735f0e4a297fede8282369f35499fbb8bc8c819f13fa8d"
+    },
+    "reports/README.md": {
+      "bytes": 2870,
+      "sha256": "4016db6ad038108446dcca19887eaa497fd4a45cc4afc6200bcd6cfc52b6711e"
     },
     "reports/REPRODUCTION_v2.md": {
       "bytes": 4932,
@@ -796,5 +800,6 @@
       "bytes": 6406,
       "sha256": "fc5a9cebdfdb977ece872d6be6946ac8c5f9b0d42103bef1848f4b2fb871e2fc"
     }
-  }
+  },
+  "inventory_scope": "Current hub_injection directory; excludes this manifest itself."
 }

@@ -1,18 +1,18 @@
 # Task 1: additive type-preserving hub perturbation of PAT-KG
 
-This is the revised v2 release. Read `reports/FINAL_REPORT_v2.md` (English), `reports/FINAL_REPORT_v2_CN.md` (Chinese), and `reports/REPRODUCTION_v2.md`. The complete v1 release is independently backed up under the parent `releases/` directory. Original graph inputs remain in the parent project and are identified by checksums in the portable input manifest.
+This directory contains the revised v2 generation pipeline, outputs, tests and archived evidence. Start with the [repository README](../README.md), [data schema](../SCHEMA.md) and [report index](reports/README.md). Original inputs are included in `../original_KG/`; historical backup and parent-workspace paths in reports describe the release environment, not this checkout.
 
 Python 3.10+; standard library only. No training, inference benchmark, source-file replacement, or new entities.
 
-From PowerShell:
+From the repository root in PowerShell:
 
 ```powershell
-Set-Location 'D:\学习\KBS_project\new_KG\task1_hub_injection'
-python .\run_task1.py --injection-ratio 0.10 --seed 42 --top-k-max 20 --hub-metric total_degree
-python .\run_tests.py
+python hub_injection/run_task1.py --graph original_KG/pat_kg_merged.json --entities original_KG/entity_id_value_type.csv --work-dir regenerated --injection-ratio 0.10 --seed 42 --top-k-max 20 --hub-metric total_degree
+$env:PAT_KG_INPUT_DIR = (Resolve-Path ./original_KG).Path
+python -m unittest discover -s hub_injection/tests -t hub_injection -v
 ```
 
-Defaults resolve the inputs `pat_kg_merged.json` and `entity_id_value_type.csv` two directories above this project. Override with `--graph PATH --entities PATH`. Use `--work-dir PATH` for independent output directories. No original dataset is duplicated. `config/task1_config.json` documents defaults; CLI parameters control execution. The runner does not implicitly read a user-edited config file.
+Always pass `--graph PATH --entities PATH`: the legacy defaults resolve two directories above the pipeline and do not target this checkout's `original_KG/`. Use a fresh `--work-dir PATH` for independent outputs. `config/task1_config.json` documents defaults; CLI parameters control execution. The runner does not implicitly read a user-edited config file. POSIX test commands are in the root README.
 
 The default graph is `outputs/pat_kg_poisoned_10pct.json`. The filename is fixed for compatibility; for a non-default ratio, the configuration and manifest give the actual ratio. The runner writes only `outputs/` and generated audit/statistics reports; it does not overwrite tests, reviews or the final handoff report.
 
@@ -39,22 +39,22 @@ Missing edges are not necessarily false. Every injected edge has `value: "fake"`
 `metadata.task1_hub_injection.injection_visibility` lists only real QIDs needing synthetic activation per snapshot. It does not alter original node observations. `src.snapshot_visibility.snapshot_view` returns non-mutating wrappers separating original observation from activation, and separates synthetic edge styling from factual truth. All visible edge endpoints resolve under this policy.
 
 ```powershell
-python .\tools\export_snapshot_v2.py --graph .\outputs\pat_kg_poisoned_10pct.json --snapshot Dec2021 --output .\snapshot_view.json
+python display/export_snapshot.py --graph pat_kg_poisoned_10pct.json --snapshot Dec2021 --output snapshot_Dec2021.json
 ```
 
-The parent `PAT_Temporal_KG_Explorer.html` embeds the original graph; it is not the v2 synthetic graph consumer. No new interactive explorer is claimed. Both delivered SVGs have actual before/after rendered inspection and independent numerical/geometry audits.
+Run this command from the repository root. See the [display guide](../display/README.md) for the wrapper format and visibility counts. No interactive explorer application is included here. Both delivered SVGs have archived before/after rendered inspection and numerical/geometry audits.
 
 ## Revised diagnostics
 
-`python tools/audit_facts_v2.py` audits all injected claims locally and reuses an explicit bounded evidence cache; `--fetch` is an optional, separately recorded network refresh. Default graph generation never uses network or timestamps. `python tools/analyze_structure_v2.py` performs a ten-seed, degree-bin/role/type/stratum-controlled random structural comparison. The outcome is mixed: augmented alternative paths are higher under this conditional baseline, but original-topology support is not uniformly stronger. These untyped structural metrics cannot verify a relation or attack success.
+From the repository root, `python hub_injection/tools/audit_facts_v2.py --original original_KG/pat_kg_merged.json` audits all injected claims locally and reuses a bounded evidence cache; `--fetch` is an optional network refresh. `python hub_injection/tools/analyze_structure_v2.py --original original_KG/pat_kg_merged.json` performs the ten-seed structural comparison. These optional commands replace their corresponding diagnostic reports. Default graph generation uses neither network nor timestamps. The structural outcome is mixed: augmented alternative paths are higher under the conditional baseline, but original-topology support is not uniformly stronger. These untyped metrics cannot verify a relation or attack success.
 
 The bounded live factual sample covers 86/774 claims (11.1%); 688 have no external current-statement lookup. All 774 receive local graph/QA checks, and all remain unresolved. Per-snapshot edge counts overlap and cannot be summed to the number of unique injected triples. Relation buckets start in deterministic sorted order before seeded shuffling; exhausted buckets are skipped while remaining buckets are sampled. The sort is required to make sampling independent of caller input order.
 
-`python tools/package_release_v2.py --graph PATH --entities PATH --check-clean reports/revision_audit/portable_reproduction.json` verifies independent-copy regeneration without hard links or stale outputs. Inputs can be stored anywhere when CLI paths and `PAT_KG_INPUT_DIR` for tests are supplied. Original datasets are omitted from portable ZIPs with complete required-input SHA-256 manifests.
+For optional clean-copy verification, use `hub_injection/tools/package_release_v2.py` from the repository root with explicit `--graph`, `--entities` and `--check-clean` paths; the evidence file's parent directory must already exist. See the [portable reproduction guide](reports/REPRODUCTION_v2.md) for the procedure. This verifies independent-copy regeneration without hard links or stale outputs. Inputs can be stored anywhere when CLI paths and `PAT_KG_INPUT_DIR` for tests are supplied. Original datasets are omitted from portable ZIPs with required-input SHA-256 manifests.
 
 ## Validation and delivery
 
-`run_tests.py` saves actual results to `reports/tests.log` and `reports/tests_summary.json`. Tests include small analytical fixtures, malicious/tampered output checks, and three full CLI runs of the real data under `python -E -S` from a fresh working directory. Same-seed output bytes must match; seed 43 must yield another valid selection. `reports/validation_results.json` validates the serialized delivered graph and input checksums. `outputs/injection_manifest.json` records configuration, source hashes, budget, K values, candidates and output hashes.
+`run_tests.py` replaces `reports/tests.log` and `reports/tests_summary.json`; the direct `unittest` command above preserves archived results. Tests include analytical fixtures, tampered-output checks and three real-data CLI runs under `python -E -S` from a fresh working directory. Same-seed output bytes must match; seed 43 must yield another valid selection. `reports/validation_results.json` records serialized graph validation. `outputs/injection_manifest.json` records configuration, source hashes, budget, K values, candidates and output hashes. Run `python tools/verify_repository.py` from the repository root to check the current delivery without modifying it.
 
 Review API calls are optional for reproduction; the local pipeline does not use credentials or contact a remote service. Actual OpenCode implementation/review artifacts are under `reports/reviews/`. Credentials remain external to this project.
 
