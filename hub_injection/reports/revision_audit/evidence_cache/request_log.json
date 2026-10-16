@@ -1,0 +1,86 @@
+[
+  {
+    "url": "https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&props=claims%7Cinfo&ids=Q11714338%7CQ10375446%7CQ10230%7CQ1192574%7CQ1004175%7CQ1058%7CQ312%7CQ101087534%7CQ11771436%7CQ1621954",
+    "subjects": [
+      "Q11714338",
+      "Q10375446",
+      "Q10230",
+      "Q1192574",
+      "Q1004175",
+      "Q1058",
+      "Q312",
+      "Q101087534",
+      "Q11771436",
+      "Q1621954"
+    ],
+    "requested_at_utc": "2026-10-16T01:37:59.948695+00:00",
+    "timeout_seconds": 12,
+    "cache_file": "batch_00.json",
+    "http_status": 200,
+    "sha256": "f70e870f82057a1986388db07b8d96aac6283fc7bf1daf1a1ed9183343ab8b8e",
+    "success": true
+  },
+  {
+    "url": "https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&props=claims%7Cinfo&ids=Q1024463%7CQ423%7CQ16214843%7CQ1070388%7CQ21281344%7CQ104379%7CQ1042994%7CQ104835199%7CQ104876806%7CQ1051256",
+    "subjects": [
+      "Q1024463",
+      "Q423",
+      "Q16214843",
+      "Q1070388",
+      "Q21281344",
+      "Q104379",
+      "Q1042994",
+      "Q104835199",
+      "Q104876806",
+      "Q1051256"
+    ],
+    "requested_at_utc": "2026-10-16T01:38:03.276798+00:00",
+    "timeout_seconds": 12,
+    "cache_file": "batch_01.json",
+    "http_status": 200,
+    "sha256": "4ef78bd53245191bd8feef0d5c32eb3dbf8d93b8ccb3af11d78160d46e7ffa96",
+    "success": true
+  },
+  {
+    "url": "https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&props=claims%7Cinfo&ids=Q105193792%7CQ10665%7CQ1093910%7CQ1116747%7CQ1127887%7CQ1136829%7CQ1140542%7CQ1144342%7CQ1159141%7CQ1199",
+    "subjects": [
+      "Q105193792",
+      "Q10665",
+      "Q1093910",
+      "Q1116747",
+      "Q1127887",
+      "Q1136829",
+      "Q1140542",
+      "Q1144342",
+      "Q1159141",
+      "Q1199"
+    ],
+    "requested_at_utc": "2026-10-16T01:38:06.617059+00:00",
+    "timeout_seconds": 12,
+    "cache_file": "batch_02.json",
+    "http_status": 200,
+    "sha256": "485943166cacca4ec267b8799b55ba7d07b0cbc62c9a073f6ffb3e06e3666cde",
+    "success": true
+  },
+  {
+    "url": "https://www.wikidata.org/w/api.php?action=wbgetentities&format=json&props=claims%7Cinfo&ids=Q1201%7CQ12014326%7CQ12142734%7CQ12210136%7CQ122141%7CQ1223204%7CQ12530053%7CQ12749865%7CQ1276338%7CQ129023",
+    "subjects": [
+      "Q1201",
+      "Q12014326",
+      "Q12142734",
+      "Q12210136",
+      "Q122141",
+      "Q1223204",
+      "Q12530053",
+      "Q12749865",
+      "Q1276338",
+      "Q129023"
+    ],
+    "requested_at_utc": "2026-10-16T01:38:09.661118+00:00",
+    "timeout_seconds": 12,
+    "cache_file": "batch_03.json",
+    "http_status": 200,
+    "sha256": "5cecda5999b23ffd1858cd60c678392e033d1ab4a88d2b387a47a503d89d803c",
+    "success": true
+  }
+]

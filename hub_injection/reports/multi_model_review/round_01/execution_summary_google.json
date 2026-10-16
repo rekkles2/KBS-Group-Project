@@ -1,0 +1,11 @@
+[
+  {
+    "role": "D",
+    "requested_model": "gemini-4-argon-contributor",
+    "http_status": 200,
+    "ok": true,
+    "returncode": 0,
+    "error": null,
+    "verdict": "PASS"
+  }
+]

@@ -1,0 +1,67 @@
+{
+  "reviewer_model": "gemini-4-argon-contributor",
+  "overall_verdict": "PASS",
+  "blocking_findings": [],
+  "major_findings": [],
+  "minor_findings": [
+    {
+      "file": "reports/revision_audit/visual_review.md",
+      "function_or_field": "Reproducibility result",
+      "record_or_line": "line 65",
+      "problem": "Stale test count in the prose of `visual_review.md` states 'copied test suite 48/48 passed', whereas the regenerated `portable_reproduction.json` (line 67), `tests_summary.json` (line 2), and `FINAL_REPORT_v2.md` (lines 35, 63) reflect the updated 51/51 test suite after adding 3 Round-1 regression tests.",
+      "concrete_evidence_or_counterexample": "`reports/revision_audit/visual_review.md` line 65 reads `copied test suite 48/48 passed with no skips`, while `reports/revision_audit/portable_reproduction.json` line 67 records `Ran 51 tests in 23.071s ... {\"tests_run\": 51, ... \"passed\": 51}`.",
+      "severity": "minor",
+      "repair_or_test": "Update `48/48` to `51/51` in `reports/revision_audit/visual_review.md` line 65 for prose consistency across all audit reports."
+    },
+    {
+      "file": "src/report_statistics.py",
+      "function_or_field": "bar_chart",
+      "record_or_line": "lines 60-73; attached PNG 1 (injected_by_relation.png) and PNG 2 (injected_by_type.png)",
+      "problem": "The relation chart renders raw Wikidata property IDs (`P102` through `P69`) without human-readable labels, and neither SVG embeds an accessible screen-reader table.",
+      "concrete_evidence_or_counterexample": "In attached PNG 1 (`injected_by_relation.png`), the y-axis labels are strictly `P102`, `P108`, ..., `P69`. `reports/revision_audit/visual_review.md` (lines 31-33) explicitly documents this design choice to avoid invented property names and relies on the accompanying JSON statistics for machine-readable table access.",
+      "severity": "minor",
+      "repair_or_test": "Optional editorial enhancement for formal publication: append canonical relation labels from `graph['relations']` alongside property IDs (e.g., `P488 (chairperson)`)."
+    }
+  ],
+  "verified_checks": [
+    "Direct visual inspection of attached PNG 1 (`injected_by_relation.png`): title 'Injected triples by relation' and subtitle 'Synthetic injection counts; not verified factual falsity. Unique triples.' are sharp, unclipped, and truthfully distinguish synthetic overlay counts from verified factual falsity.",
+    "Direct visual inspection of attached PNG 1 (`injected_by_relation.png`): all 18 relation categories (`P102` to `P69` in lexical order), horizontal `#245c91` bars, and right-hand integer labels (33, 60, 69, 57, 19, 32, 59, 14, 41, 8, 30, 9, 2, 32, 129, 9, 61, 110; sum = 774) are completely legible with zero text/bar overlap or canvas clipping.",
+    "Direct visual inspection of attached PNG 2 (`injected_by_type.png`): title 'Injected triples by swapped general entity type' and subtitle 'Synthetic injection counts; not verified factual falsity. Unique triples.' are clearly rendered and unclipped.",
+    "Direct visual inspection of attached PNG 2 (`injected_by_type.png`): all 23 general entity type labels (including the longest `HigherEducationInstitution` at x=20, width=167.52px, ending at 187.52px well before the bar start at x=260), horizontal bars, and integer counts (twelve types at 48, SportsTeam at 47, MediaOrganization at 28, EducationalInstitution at 24, Concept at 17, ResearchInstitution at 9, CulturalInstitution at 7, SportsOrganization at 7, CentralBank at 5, ReligiousOrganization at 4, CulturalOrganization at 2; sum = 774) are crisp, non-overlapping, and well inside the 920x744 canvas.",
+    "Cross-check of visual geometry against `tools/audit_visuals_v2.py` and `reports/revision_audit/visual_counts_after.json`: every bar width equals `540 * count / max_count` within 0.00501px, every numeric value label sits at `x = 270 + width`, and the rightmost text bounding box (`129` at x=810, width=23.25px -> right edge 833.25px) leaves >86px right margin on the 920px canvas.",
+    "Cross-examination of Reviewer C (C-major-1) and Reviewer A (A-major-2) on `balanced_sample` pre-shuffle sorting: Reviewer C's claim that `buckets[kind][relation].sort(key=triple)` before `rng.shuffle(...)` is 'dead code' is mathematically false because `random.Random.shuffle` is an in-place index permutation whose result depends on the initial list order. `reports/revision_audit/sampling_sort_counterexample.json` and `test_presort_is_needed_for_input_order_independent_seed` prove that removing the sort alters the sampled triples (`['Q1','Q11','Q2','Q4','Q5']` vs `['Q11','Q12','Q2','Q8','Q9']`) when caller input order varies. README line 45 also explicitly documents bucket exhaustion semantics.",
+    "Cross-examination of Reviewer A (A-major-1 & A-major-4) on changed positions and two-position structural baseline strata: `reports/revision_audit/structural_support.md` line 40 and `test_every_accepted_candidate_has_a_changed_position` confirm the exact distribution across the 774 injected edges is `{'source': 388, 'target': 386}` with 0 zero-position and 0 two-position swaps. All 774 edges enter every one of the 10 random baseline seeds (`Exact degree-bin matched edges: [774, ..., 774]`, fallback `[0, ..., 0]`) without any hidden filtering.",
+    "Cross-examination of Reviewer C (C-major-2) and Reviewer B (B-minor-2) on manifest coverage and bundle completeness: `run_task1.py` lines 62-64 and `outputs/injection_manifest.json` lines 162-202 now hash all `src/*.py`, `tests/*.py`, `tools/*.py`, entry scripts, `requirements.txt`, and `config/task1_config.json` (39 files total), and `portable_reproduction.json` confirms byte-identical clean regeneration across two fresh runs matching `pat_kg_poisoned_10pct.json` (`7abb46ca160a7fe0b300653cc0a8c8221e6e728af25971c14b2f18f11b7f5707`). All previously missing files (`tools/audit_facts_v2.py`, `FINAL_REPORT_v2.md`, `REPRODUCTION_v2.md`, `visual_review.md`) are present and verified in the current bundle.",
+    "Cross-examination of ROOT-TRUTH-01 and factual verification separation: `reports/validation_results.json` line 13 (`factual_verdicts_match_explicit_evidence_context: true`) and `test_unsupported_factual_truth_tamper_is_rejected` confirm the validator rederives factual status against explicit evidence and rejects fabricated `verified_false`/`verified_true` labels. All 774 injected edges have `value: \"fake\"` (synthetic class only), 0 real nodes or original edges are labeled fake, and `factual_verification.status` is `unresolved` for all 774 edges (`verified_false: 0`, `verified_true: 0`).",
+    "Verification of snapshot visibility adapter and scope constraints: original counts (7,868 nodes, 7,737 edges, 18,436 QA, 496 unresolved paths) and configuration (ratio=0.10, seed=42, initial top_k_max=20, hub_metric=total_degree) are preserved; 774 unique edges are added for 8,511 total edges; the non-mutating snapshot adapter activates 6/1/4 real QIDs in Dec2021/Dec2023/March2024 to resolve all 38 baseline visibility mismatches with 0 dangling edges and no edits to original node `observed_in_snapshots` lists."
+  ],
+  "unsupported_claims": [],
+  "recommended_fixes": [
+    "Update the single remaining prose reference from `48/48` to `51/51` in `reports/revision_audit/visual_review.md` line 65.",
+    "If the SVG charts are later adapted into a formal paper, consider appending human-readable relation labels next to the Wikidata P-IDs in `injected_by_relation.svg`."
+  ],
+  "evidence_references": [
+    "Attached PNG 1 (`output/playwright/after/injected_by_relation.png`)",
+    "Attached PNG 2 (`output/playwright/after/injected_by_type.png`)",
+    "README.md:1-57",
+    "run_task1.py:21-126",
+    "src/report_statistics.py:60-98",
+    "tools/audit_visuals_v2.py:16-91",
+    "tools/audit_facts_v2.py:1-150",
+    "outputs/injection_manifest.json:1-208",
+    "reports/validation_results.json:1-40",
+    "reports/tests_summary.json:1-8",
+    "reports/revision_audit/visual_review.md:1-65",
+    "reports/revision_audit/visual_counts_after.json:1-845",
+    "reports/revision_audit/sampling_sort_counterexample.json:1-18",
+    "reports/revision_audit/structural_support.md:1-50",
+    "reports/revision_audit/factual_verification_summary.md:1-32",
+    "reports/revision_audit/portable_reproduction.json:1-69",
+    "reports/FINAL_REPORT_v2.md:1-69"
+  ],
+  "remaining_uncertainty": [
+    "No known supported blocking or major implementation issue remains.",
+    "Only the two attached 'after' PNG figures (`injected_by_relation.png` and `injected_by_type.png`) were provided in this prompt; the 'before' PNGs and any browser rendering of `PAT_Temporal_KG_Explorer.html` were not attached and therefore were not visually inspected, consistent with the documentation's stated boundary.",
+    "All 774 injected claims remain factually `unresolved` with 86/774 (11.1%) purposively checked against live Wikidata statements and 688/774 unchecked externally, and clean-copy byte reproducibility was executed on Windows 10 / CPython 3.10.0; both are transparently disclosed methodological/environment boundaries rather than defects."
+  ]
+}

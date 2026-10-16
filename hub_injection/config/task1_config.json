@@ -1,0 +1,10 @@
+{
+  "injection_ratio": "0.10",
+  "seed": 42,
+  "top_k_max": 20,
+  "hub_metric": "total_degree",
+  "rounding": "decimal_exact_round_half_even",
+  "expansion": "double_ranked_prefix_per_type_until_feasible",
+  "compatibility": "original_directed_relation_role_and_counterpart_general_type",
+  "sampling": "round_robin_type_then_relation_seeded_within_buckets"
+}

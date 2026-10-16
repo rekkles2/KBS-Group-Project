@@ -1,0 +1,32 @@
+{
+  "ok": true,
+  "model": "deepseek-v4-pro",
+  "session_id": "kbs-task1-v2-label-closure-A",
+  "thinking_requested": "disabled",
+  "request_parameters": {
+    "protocol": "chat",
+    "reasoning_effort": null,
+    "enable_thinking": null,
+    "max_tokens": 9000,
+    "timeout": 240.0
+  },
+  "started_at": "2026-10-16T02:08:35.839441+00:00",
+  "prompt_sha256": "30a8ecb04fde3b5d7c57617b8febee62f6b610a2a43a8c67f00c228175af9b59",
+  "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+  "http_status": 200,
+  "response_id": "c6c769c7-8c47-4501-b858-67d69c4c2fdc",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 16790,
+    "completion_tokens": 816,
+    "total_tokens": 17606,
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 16790,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "cost": null,
+  "text": "```json\n{\n  \"reviewer_model\": \"deepseek-v4-pro\",\n  \"overall_verdict\": \"PASS\",\n  \"blocking_findings\": [],\n  \"major_findings\": [],\n  \"minor_findings\": [\n    \"The term 'fake' in edge labels remains semantically overloaded despite explicit disclaimers; a consumer reading only the CSV could misread it as verified factual falsity. The metadata and factual_verification column mitigate this.\",\n    \"Node participation labels count only nodes incident to injected edges (654), which is correct but could be misread as '654 synthetic nodes' by a cursory reader; the all-zero is_synthetic_node column and manifest semantics address this.\"\n  ],\n  \"verified_checks\": [\n    \"Edge label CSV contains exactly 8511 rows: 7737 original edges labeled is_synthetic_edge=0 and 774 injected edges labeled is_synthetic_edge=1.\",\n    \"Binary edge labels align with augmented graph edge order; edge_index values are dense 0..8510 and source/relation/target triples match the serialized augmented graph.\",\n    \"All 774 injected edges carry synthetic_class='fake' and factual_verification_status='unresolved'; no edge is labeled verified_false or verified_true.\",\n    \"Node identity labels are all zero: 7868 rows, is_synthetic_node='0' for every row, confirming no original entity object was relabeled fictitious.\",\n    \"Node participation counts are derived from actual injected edge endpoints: 654 distinct QIDs have incident_to_synthetic_edge=1; in-degree and out-degree sums match the 774 injected edges' endpoint frequencies.\",\n    \"Original graph metadata, nodes, edges, questions, relations, and unresolved paths are byte-identical to source inputs; original node objects are shared references, not mutated.\",\n    \"The augmented graph serialization matches the in-memory object and input checksums are re-verified at end of execution.\",\n    \"53/53 automated tests pass with no skips, including the two new training-label tests and delivery verification.\",\n    \"Two independent clean runs produce byte-identical output hashes for all six delivered files, and the delivered canonical hashes match the portable reproduction audit.\",\n    \"No executable counterexample remains: the training-label tables are generated from the same augmented graph that is serialized and validated, and the validator re-checks the serialized CSV-aligned counts.\"\n  ],\n  \"unsupported_claims\": [],\n  \"recommended_fixes\": [\n    \"Optional: rename 'synthetic_class' values from 'fake'/'original' to 'injected'/'original' in a future schema to reduce semantic ambiguity, or add a per-row comment column.\",\n    \"Optional: include a header-level note in the CSV files themselves (not only manifest) stating that labels are construction labels, not truth labels.\"\n  ],\n  \"evidence_references\": [\n    \"src/export_training_labels.py: writes edge_injection_labels.csv and node_injection_labels.csv from augmented graph and original node set.\",\n    \"tests/test_training_labels.py: verifies synthetic_nodes=0, one edge labeled synthetic, two endpoints incident-to-1, and edge factual status unresolved.\",\n    \"tools/verify_delivery.py: independent check that edge labels align with graph records and node labels match injected endpoint degree counters.\",\n    \"outputs/injection_manifest.json: training_labels summary edge_rows=8511, synthetic_edges=774, node_rows=7868, synthetic_nodes=0, nodes_incident_to_synthetic_edges=654.\",\n    \"reports/revision_audit/portable_reproduction.json: two clean runs produce identical output hashes matching canonical hashes labeled in manifest.\"\n  ],\n  \"remaining_uncertainty\": \"None for the added functionality. All 774 injected edges remain factually unresolved by design; this is construction provenance, not verified falsity.\"\n}\n```",
+  "elapsed_seconds": 14.469
+}

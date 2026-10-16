@@ -1,0 +1,845 @@
+{
+  "charts": [
+    {
+      "path": "..\\releases\\baseline_v1_20261016T103451+0900\\task1_hub_injection\\reports\\injected_by_relation.svg",
+      "total": 774,
+      "rows": [
+        {
+          "category": "P102",
+          "count": 33,
+          "width": 138.14
+        },
+        {
+          "category": "P108",
+          "count": 60,
+          "width": 251.16
+        },
+        {
+          "category": "P112",
+          "count": 69,
+          "width": 288.84
+        },
+        {
+          "category": "P115",
+          "count": 57,
+          "width": 238.6
+        },
+        {
+          "category": "P127",
+          "count": 19,
+          "width": 79.53
+        },
+        {
+          "category": "P1365",
+          "count": 32,
+          "width": 133.95
+        },
+        {
+          "category": "P159",
+          "count": 59,
+          "width": 246.98
+        },
+        {
+          "category": "P169",
+          "count": 14,
+          "width": 58.6
+        },
+        {
+          "category": "P19",
+          "count": 41,
+          "width": 171.63
+        },
+        {
+          "category": "P26",
+          "count": 8,
+          "width": 33.49
+        },
+        {
+          "category": "P27",
+          "count": 30,
+          "width": 125.58
+        },
+        {
+          "category": "P286",
+          "count": 9,
+          "width": 37.67
+        },
+        {
+          "category": "P35",
+          "count": 2,
+          "width": 8.37
+        },
+        {
+          "category": "P39",
+          "count": 32,
+          "width": 133.95
+        },
+        {
+          "category": "P488",
+          "count": 129,
+          "width": 540.0
+        },
+        {
+          "category": "P54",
+          "count": 9,
+          "width": 37.67
+        },
+        {
+          "category": "P6",
+          "count": 61,
+          "width": 255.35
+        },
+        {
+          "category": "P69",
+          "count": 110,
+          "width": 460.47
+        }
+      ],
+      "title": "Injected triples by relation",
+      "caption": "Actual generated data; seed 42 in default run. Counts of unique injected triples.",
+      "viewBox": "0 0 920 604",
+      "all_count_and_geometry_checks_passed": true
+    },
+    {
+      "path": "..\\releases\\baseline_v1_20261016T103451+0900\\task1_hub_injection\\reports\\injected_by_type.svg",
+      "total": 774,
+      "rows": [
+        {
+          "category": "AdministrativeArea",
+          "count": 48,
+          "width": 540.0
+        },
+        {
+          "category": "CentralBank",
+          "count": 5,
+          "width": 56.25
+        },
+        {
+          "category": "CityTown",
+          "count": 48,
+          "width": 540.0
+        },
+        {
+          "category": "Company",
+          "count": 48,
+          "width": 540.0
+        },
+        {
+          "category": "Concept",
+          "count": 17,
+          "width": 191.25
+        },
+        {
+          "category": "Country",
+          "count": 48,
+          "width": 540.0
+        },
+        {
+          "category": "CulturalInstitution",
+          "count": 7,
+          "width": 78.75
+        },
+        {
+          "category": "CulturalOrganization",
+          "count": 2,
+          "width": 22.5
+        },
+        {
+          "category": "EducationalInstitution",
+          "count": 24,
+          "width": 270.0
+        },
+        {
+          "category": "GovernmentOrganization",
+          "count": 48,
+          "width": 540.0
+        },
+        {
+          "category": "HigherEducationInstitution",
+          "count": 48,
+          "width": 540.0
+        },
+        {
+          "category": "MediaOrganization",
+          "count": 28,
+          "width": 315.0
+        },
+        {
+          "category": "Organization",
+          "count": 48,
+          "width": 540.0
+        },
+        {
+          "category": "Person",
+          "count": 48,
+          "width": 540.0
+        },
+        {
+          "category": "PoliticalParty",
+          "count": 48,
+          "width": 540.0
+        },
+        {
+          "category": "Position",
+          "count": 48,
+          "width": 540.0
+        },
+        {
+          "category": "ReligiousOrganization",
+          "count": 4,
+          "width": 45.0
+        },
+        {
+          "category": "ResearchInstitution",
+          "count": 9,
+          "width": 101.25
+        },
+        {
+          "category": "School",
+          "count": 48,
+          "width": 540.0
+        },
+        {
+          "category": "SportsOrganization",
+          "count": 7,
+          "width": 78.75
+        },
+        {
+          "category": "SportsTeam",
+          "count": 47,
+          "width": 528.75
+        },
+        {
+          "category": "SportsVenue",
+          "count": 48,
+          "width": 540.0
+        },
+        {
+          "category": "University",
+          "count": 48,
+          "width": 540.0
+        }
+      ],
+      "title": "Injected triples by swapped general entity type",
+      "caption": "Actual generated data; seed 42 in default run. Counts of unique injected triples.",
+      "viewBox": "0 0 920 744",
+      "all_count_and_geometry_checks_passed": true
+    }
+  ],
+  "renders": [
+    {
+      "uri": "file:///D:/%E5%AD%A6%E4%B9%A0/KBS_project/new_KG/releases/baseline_v1_20261016T103451%2B0900/task1_hub_injection/reports/injected_by_relation.svg",
+      "output": "D:\\\u5b66\u4e60\\KBS_project\\new_KG\\task1_hub_injection\\output\\playwright\\before\\injected_by_relation.png",
+      "text_boxes": [
+        {
+          "text": "Injected triples by relation",
+          "x": 20,
+          "y": 9,
+          "width": 249.46875,
+          "height": 26
+        },
+        {
+          "text": "Actual generated data; seed 42 in default run. Counts of unique injected triples.",
+          "x": 19,
+          "y": 42,
+          "width": 456.75390625,
+          "height": 16
+        },
+        {
+          "text": "P102",
+          "x": 20,
+          "y": 82,
+          "width": 31.20068359375,
+          "height": 17
+        },
+        {
+          "text": "33",
+          "x": 408.1400146484375,
+          "y": 82,
+          "width": 15.25,
+          "height": 17
+        },
+        {
+          "text": "P108",
+          "x": 20,
+          "y": 110,
+          "width": 31.20068359375,
+          "height": 17
+        },
+        {
+          "text": "60",
+          "x": 521.1599731445312,
+          "y": 110,
+          "width": 15.62353515625,
+          "height": 17
+        },
+        {
+          "text": "P112",
+          "x": 20,
+          "y": 138,
+          "width": 31.20068359375,
+          "height": 17
+        },
+        {
+          "text": "69",
+          "x": 558.8400268554688,
+          "y": 138,
+          "width": 15.62353515625,
+          "height": 17
+        },
+        {
+          "text": "P115",
+          "x": 20,
+          "y": 166,
+          "width": 30.828125,
+          "height": 17
+        },
+        {
+          "text": "57",
+          "x": 508.6000061035156,
+          "y": 166,
+          "width": 15.623504638671875,
+          "height": 17
+        },
+        {
+          "text": "P127",
+          "x": 20,
+          "y": 194,
+          "width": 31.20068359375,
+          "height": 17
+        },
+        {
+          "text": "19",
+          "x": 349.5299987792969,
+          "y": 194,
+          "width": 15.62353515625,
+          "height": 17
+        },
+        {
+          "text": "P1365",
+          "x": 20,
+          "y": 222,
+          "width": 38.453125,
+          "height": 17
+        },
+        {
+          "text": "32",
+          "x": 403.95001220703125,
+          "y": 222,
+          "width": 15.62353515625,
+          "height": 17
+        },
+        {
+          "text": "P159",
+          "x": 20,
+          "y": 250,
+          "width": 31.20068359375,
+          "height": 17
+        },
+        {
+          "text": "59",
+          "x": 516.97998046875,
+          "y": 250,
+          "width": 15.62353515625,
+          "height": 17
+        },
+        {
+          "text": "P169",
+          "x": 20,
+          "y": 278,
+          "width": 31.20068359375,
+          "height": 17
+        },
+        {
+          "text": "14",
+          "x": 328.6000061035156,
+          "y": 278,
+          "width": 15.62353515625,
+          "height": 17
+        },
+        {
+          "text": "P19",
+          "x": 20,
+          "y": 306,
+          "width": 23.5771484375,
+          "height": 17
+        },
+        {
+          "text": "41",
+          "x": 440.6300048828125,
+          "y": 306,
+          "width": 16.25,
+          "height": 17
+        },
+        {
+          "text": "P26",
+          "x": 20,
+          "y": 334,
+          "width": 23.5771484375,
+          "height": 17
+        },
+        {
+          "text": "8",
+          "x": 303.489990234375,
+          "y": 334,
+          "width": 8,
+          "height": 17
+        },
+        {
+          "text": "P27",
+          "x": 20,
+          "y": 362,
+          "width": 23.5771484375,
+          "height": 17
+        },
+        {
+          "text": "30",
+          "x": 395.5799865722656,
+          "y": 362,
+          "width": 15.62353515625,
+          "height": 17
+        },
+        {
+          "text": "P286",
+          "x": 20,
+          "y": 390,
+          "width": 31.20068359375,
+          "height": 17
+        },
+        {
+          "text": "9",
+          "x": 307.6700134277344,
+          "y": 390,
+          "width": 8,
+          "height": 17
+        },
+        {
+          "text": "P35",
+          "x": 20,
+          "y": 418,
+          "width": 23.203125,
+          "height": 17
+        },
+        {
+          "text": "2",
+          "x": 278.3699951171875,
+          "y": 418,
+          "width": 8,
+          "height": 17
+        },
+        {
+          "text": "P39",
+          "x": 20,
+          "y": 446,
+          "width": 23.5771484375,
+          "height": 17
+        },
+        {
+          "text": "32",
+          "x": 403.95001220703125,
+          "y": 446,
+          "width": 15.62353515625,
+          "height": 17
+        },
+        {
+          "text": "P488",
+          "x": 20,
+          "y": 474,
+          "width": 31.20068359375,
+          "height": 17
+        },
+        {
+          "text": "129",
+          "x": 810,
+          "y": 474,
+          "width": 23.2470703125,
+          "height": 17
+        },
+        {
+          "text": "P54",
+          "x": 20,
+          "y": 502,
+          "width": 23.5771484375,
+          "height": 17
+        },
+        {
+          "text": "9",
+          "x": 307.6700134277344,
+          "y": 502,
+          "width": 8,
+          "height": 17
+        },
+        {
+          "text": "P6",
+          "x": 20,
+          "y": 530,
+          "width": 15.95361328125,
+          "height": 17
+        },
+        {
+          "text": "61",
+          "x": 525.3499755859375,
+          "y": 530,
+          "width": 15.25,
+          "height": 17
+        },
+        {
+          "text": "P69",
+          "x": 20,
+          "y": 558,
+          "width": 23.5771484375,
+          "height": 17
+        },
+        {
+          "text": "110",
+          "x": 730.469970703125,
+          "y": 558,
+          "width": 23.2470703125,
+          "height": 17
+        }
+      ]
+    },
+    {
+      "uri": "file:///D:/%E5%AD%A6%E4%B9%A0/KBS_project/new_KG/releases/baseline_v1_20261016T103451%2B0900/task1_hub_injection/reports/injected_by_type.svg",
+      "output": "D:\\\u5b66\u4e60\\KBS_project\\new_KG\\task1_hub_injection\\output\\playwright\\before\\injected_by_type.png",
+      "text_boxes": [
+        {
+          "text": "Injected triples by swapped general entity type",
+          "x": 20,
+          "y": 9,
+          "width": 448.59375,
+          "height": 26
+        },
+        {
+          "text": "Actual generated data; seed 42 in default run. Counts of unique injected triples.",
+          "x": 19,
+          "y": 42,
+          "width": 456.75390625,
+          "height": 16
+        },
+        {
+          "text": "AdministrativeArea",
+          "x": 19,
+          "y": 82,
+          "width": 119.5,
+          "height": 17
+        },
+        {
+          "text": "48",
+          "x": 809,
+          "y": 82,
+          "width": 16.62353515625,
+          "height": 17
+        },
+        {
+          "text": "CentralBank",
+          "x": 20,
+          "y": 110,
+          "width": 75.88818359375,
+          "height": 17
+        },
+        {
+          "text": "5",
+          "x": 326.25,
+          "y": 110,
+          "width": 7.625,
+          "height": 17
+        },
+        {
+          "text": "CityTown",
+          "x": 20,
+          "y": 138,
+          "width": 56.4375,
+          "height": 17
+        },
+        {
+          "text": "48",
+          "x": 809,
+          "y": 138,
+          "width": 16.62353515625,
+          "height": 17
+        },
+        {
+          "text": "Company",
+          "x": 20,
+          "y": 166,
+          "width": 60.45703125,
+          "height": 17
+        },
+        {
+          "text": "48",
+          "x": 809,
+          "y": 166,
+          "width": 16.62353515625,
+          "height": 17
+        },
+        {
+          "text": "Concept",
+          "x": 20,
+          "y": 194,
+          "width": 52.16943359375,
+          "height": 17
+        },
+        {
+          "text": "17",
+          "x": 461.25,
+          "y": 194,
+          "width": 15.62353515625,
+          "height": 17
+        },
+        {
+          "text": "Country",
+          "x": 20,
+          "y": 222,
+          "width": 51.3544921875,
+          "height": 17
+        },
+        {
+          "text": "48",
+          "x": 809,
+          "y": 222,
+          "width": 16.62353515625,
+          "height": 17
+        },
+        {
+          "text": "CulturalInstitution",
+          "x": 20,
+          "y": 250,
+          "width": 112.21875,
+          "height": 17
+        },
+        {
+          "text": "7",
+          "x": 348.75,
+          "y": 250,
+          "width": 8,
+          "height": 17
+        },
+        {
+          "text": "CulturalOrganization",
+          "x": 20,
+          "y": 278,
+          "width": 129.140625,
+          "height": 17
+        },
+        {
+          "text": "2",
+          "x": 292.5,
+          "y": 278,
+          "width": 8,
+          "height": 17
+        },
+        {
+          "text": "EducationalInstitution",
+          "x": 20,
+          "y": 306,
+          "width": 136,
+          "height": 17
+        },
+        {
+          "text": "24",
+          "x": 540,
+          "y": 306,
+          "width": 15.62353515625,
+          "height": 17
+        },
+        {
+          "text": "GovernmentOrganization",
+          "x": 20,
+          "y": 334,
+          "width": 157.921875,
+          "height": 17
+        },
+        {
+          "text": "48",
+          "x": 809,
+          "y": 334,
+          "width": 16.62353515625,
+          "height": 17
+        },
+        {
+          "text": "HigherEducationInstitution",
+          "x": 20,
+          "y": 362,
+          "width": 167.515625,
+          "height": 17
+        },
+        {
+          "text": "48",
+          "x": 809,
+          "y": 362,
+          "width": 16.62353515625,
+          "height": 17
+        },
+        {
+          "text": "MediaOrganization",
+          "x": 20,
+          "y": 390,
+          "width": 119.546875,
+          "height": 17
+        },
+        {
+          "text": "28",
+          "x": 585,
+          "y": 390,
+          "width": 15.62353515625,
+          "height": 17
+        },
+        {
+          "text": "Organization",
+          "x": 20,
+          "y": 418,
+          "width": 80.515625,
+          "height": 17
+        },
+        {
+          "text": "48",
+          "x": 809,
+          "y": 418,
+          "width": 16.62353515625,
+          "height": 17
+        },
+        {
+          "text": "Person",
+          "x": 20,
+          "y": 446,
+          "width": 42.171875,
+          "height": 17
+        },
+        {
+          "text": "48",
+          "x": 809,
+          "y": 446,
+          "width": 16.62353515625,
+          "height": 17
+        },
+        {
+          "text": "PoliticalParty",
+          "x": 20,
+          "y": 474,
+          "width": 80.9853515625,
+          "height": 17
+        },
+        {
+          "text": "48",
+          "x": 809,
+          "y": 474,
+          "width": 16.62353515625,
+          "height": 17
+        },
+        {
+          "text": "Position",
+          "x": 20,
+          "y": 502,
+          "width": 49.765625,
+          "height": 17
+        },
+        {
+          "text": "48",
+          "x": 809,
+          "y": 502,
+          "width": 16.62353515625,
+          "height": 17
+        },
+        {
+          "text": "ReligiousOrganization",
+          "x": 20,
+          "y": 530,
+          "width": 136.96875,
+          "height": 17
+        },
+        {
+          "text": "4",
+          "x": 314,
+          "y": 530,
+          "width": 9,
+          "height": 17
+        },
+        {
+          "text": "ResearchInstitution",
+          "x": 20,
+          "y": 558,
+          "width": 118.9375,
+          "height": 17
+        },
+        {
+          "text": "9",
+          "x": 371.25,
+          "y": 558,
+          "width": 8,
+          "height": 17
+        },
+        {
+          "text": "School",
+          "x": 20,
+          "y": 586,
+          "width": 42.015625,
+          "height": 17
+        },
+        {
+          "text": "48",
+          "x": 809,
+          "y": 586,
+          "width": 16.62353515625,
+          "height": 17
+        },
+        {
+          "text": "SportsOrganization",
+          "x": 20,
+          "y": 614,
+          "width": 120.8125,
+          "height": 17
+        },
+        {
+          "text": "7",
+          "x": 348.75,
+          "y": 614,
+          "width": 8,
+          "height": 17
+        },
+        {
+          "text": "SportsTeam",
+          "x": 20,
+          "y": 642,
+          "width": 73.0625,
+          "height": 17
+        },
+        {
+          "text": "47",
+          "x": 797.75,
+          "y": 642,
+          "width": 16.62353515625,
+          "height": 17
+        },
+        {
+          "text": "SportsVenue",
+          "x": 20,
+          "y": 670,
+          "width": 79.60791015625,
+          "height": 17
+        },
+        {
+          "text": "48",
+          "x": 809,
+          "y": 670,
+          "width": 16.62353515625,
+          "height": 17
+        },
+        {
+          "text": "University",
+          "x": 20,
+          "y": 698,
+          "width": 62.67236328125,
+          "height": 17
+        },
+        {
+          "text": "48",
+          "x": 809,
+          "y": 698,
+          "width": 16.62353515625,
+          "height": 17
+        }
+      ]
+    }
+  ]
+}

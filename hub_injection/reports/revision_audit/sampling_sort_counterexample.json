@@ -1,0 +1,18 @@
+{
+  "production_sort_makes_input_order_irrelevant": true,
+  "removing_sort_changes_selection_under_reordered_input": true,
+  "counterexample_source_ids_before": [
+    "Q1",
+    "Q11",
+    "Q2",
+    "Q4",
+    "Q5"
+  ],
+  "counterexample_source_ids_after": [
+    "Q11",
+    "Q12",
+    "Q2",
+    "Q8",
+    "Q9"
+  ]
+}

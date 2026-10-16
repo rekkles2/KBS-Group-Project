@@ -1,0 +1,16 @@
+{
+  "ok": false,
+  "model": "gemini-4-argon-contributor",
+  "session_id": "kbs-task1-v2-r1-D",
+  "thinking_requested": "auto",
+  "started_at": "2026-10-16T01:42:28.467670+00:00",
+  "prompt_sha256": "cd9041412c273b012c920c9bba0cc89c9aa5f87820d69a100df3198d4c131208",
+  "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+  "image_sha256": {
+    "injected_by_relation.png": "087e333741109512ba50e3167ac4132d26a68dcf61d8afef0fbda4dc305bb0da",
+    "injected_by_type.png": "b43e15f478f6c4d792c122d8e2a945a2487ca85f9860e34741bae3d8e9fbfc0c"
+  },
+  "http_status": 400,
+  "error": "HTTP 400: {\"type\":\"error\",\"error\":{\"type\":\"ModelProtocolUnsupported\",\"message\":\"Model does not support this protocol.\"}}",
+  "elapsed_seconds": 0.906
+}

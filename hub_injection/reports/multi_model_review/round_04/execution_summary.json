@@ -1,0 +1,38 @@
+[
+  {
+    "role": "A",
+    "model": "deepseek-v4-pro",
+    "ok": true,
+    "http_status": 200,
+    "finish_reason": "stop",
+    "error": null,
+    "verdict": "PASS"
+  },
+  {
+    "role": "D",
+    "model": "gemini-4-argon-contributor",
+    "ok": true,
+    "http_status": 200,
+    "finish_reason": "stop",
+    "error": null,
+    "verdict": "PASS"
+  },
+  {
+    "role": "C",
+    "model": "qwen3.8-max",
+    "ok": true,
+    "http_status": 200,
+    "finish_reason": "stop",
+    "error": null,
+    "verdict": "PASS"
+  },
+  {
+    "role": "B",
+    "model": "glm-5.3",
+    "ok": true,
+    "http_status": 200,
+    "finish_reason": "stop",
+    "error": null,
+    "verdict": "PASS"
+  }
+]

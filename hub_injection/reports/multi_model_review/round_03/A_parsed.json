@@ -1,0 +1,50 @@
+{
+  "reviewer_model": "deepseek-v4-pro",
+  "overall_verdict": "PASS",
+  "blocking_findings": [],
+  "major_findings": [],
+  "minor_findings": [
+    {
+      "file": "reports/revision_audit/structural_support.md",
+      "function_or_field": "Bounded interpretation paragraph",
+      "record_or_line": "line 46",
+      "problem": "The final interpretive paragraph reports alternative-path fraction 99.87% vs 92.69% without repeating the synthetic-path dependency caveat in the same paragraph, though the definitions section (line 9) does state paths 'may use other synthetic triples'. The intended clarification is now present in the definitions section but not co-located with the strong numerical contrast.",
+      "concrete_evidence_or_counterexample": "Current structural_support.md definitions section states 'Alternative paths are measured in the completed augmented graph... They may use other synthetic triples.' The interpretive paragraph then reports the numerical gap without an inline qualifier such as 'using the augmented graph'. The metric name in the comparison table remains 'alternative_path_fraction' unqualified.",
+      "severity": "minor",
+      "repair_or_test": "Optional: add 'in the augmented graph' as an inline qualifier on line 46 or rename the JSON key to 'alternative_path_fraction_in_augmented_graph'. Editorial only; no computational defect."
+    },
+    {
+      "file": "src/inject_misinformation.py",
+      "function_or_field": "balanced_sample pre-shuffle sort",
+      "record_or_line": "line 38-39",
+      "problem": "The prior 'dead code' claim was refuted by an executable counterexample and reviewer C corrected the record. The current delivery includes an added explanatory inline comment on the canonical pre-shuffle sort. No defect remains; this entry documents closure.",
+      "concrete_evidence_or_counterexample": "sampling_sort_counterexample.json: production_sort_makes_input_order_irrelevant=true, removing_sort_changes_selection_under_reordered_input=true. tests/test_revision_schema.test_presort_is_needed_for_input_order_independent_seed passes.",
+      "severity": "minor",
+      "repair_or_test": "None; retain the comment and regression test."
+    }
+  ],
+  "verified_checks": [
+    "Structure report now explicitly documents synthetic-path dependence in definitions and retains the random-baseline disclosure (removes hub ranking intentionally; role-and-degree-bin conditional, not causal).",
+    "Visual report test count synchronized 48/48 -> 51/51, matching tests_summary.json and portable_reproduction tests_stdout.",
+    "Pre-shuffle sort comment added; the sort is evidenced as caller-order invariance under fixed seed, not dead code.",
+    "All four prior full-code reviewers now pass; no blocking finding persists.",
+    "Portable reproduction hash parity remains intact: all four outputs match canonical SHA-256 across two clean runs.",
+    "Factual external uncertainty retained: 774 unresolved; 86/774 with current lookups; 688 without by design. No inference from absence."
+  ],
+  "unsupported_claims": [
+    "None. Text-only reviewers did not claim local execution or image inspection; Gemini image evidence is recorded separately."
+  ],
+  "recommended_fixes": [
+    "Optionally append the inline qualifier 'in the augmented graph' to the alternative-path comparison paragraph or rename the JSON metric key; no algorithm/schema/config change required."
+  ],
+  "evidence_references": [
+    "reports/revision_audit/structural_support.md lines 9, 40-46",
+    "reports/revision_audit/visual_review.md line 66",
+    "reports/tests_summary.json",
+    "reports/revision_audit/portable_reproduction.json",
+    "reports/revision_audit/sampling_sort_counterexample.json",
+    "outputs/injection_manifest.json factual_verification_v2",
+    "reports/FINAL_REPORT_v2.md lines 11-17, 50-55"
+  ],
+  "remaining_uncertainty": "The deliberate factual-coverage limit remains: 86/774 current lookups, 688 without external current-statement lookup by documented design. The random structural baseline is explicitly conditional and not a causal or exact null. Cross-OS/interpreter byte identity is not promised. No supported blocking or major implementation defect remains."
+}

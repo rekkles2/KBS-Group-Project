@@ -1,0 +1,48 @@
+{
+  "ok": true,
+  "model": "gemini-4-argon-contributor",
+  "session_id": "kbs-task1-v2-label-closure-D",
+  "thinking_requested": "auto",
+  "request_parameters": {
+    "protocol": "google",
+    "reasoning_effort": null,
+    "enable_thinking": null,
+    "max_tokens": 9000,
+    "timeout": 240.0
+  },
+  "started_at": "2026-10-16T02:08:35.837443+00:00",
+  "prompt_sha256": "c5f14db53f0bf054157812d3d1765b978faa68647d07ae5511936250ba7ab0b5",
+  "endpoint": "https://opencode.ai/inference/go/google/v1beta/models/gemini-4-argon-contributor:generateContent",
+  "image_sha256": {
+    "injected_by_relation.png": "087e333741109512ba50e3167ac4132d26a68dcf61d8afef0fbda4dc305bb0da",
+    "injected_by_type.png": "b43e15f478f6c4d792c122d8e2a945a2487ca85f9860e34741bae3d8e9fbfc0c"
+  },
+  "http_status": 200,
+  "response_id": "JIfRaoiTK4Ka_uMPh6be2Aw",
+  "finish_reason": "stop",
+  "usage": {
+    "candidatesTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 1171
+      }
+    ],
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 19540
+      },
+      {
+        "modality": "IMAGE",
+        "tokenCount": 2217
+      }
+    ],
+    "candidatesTokenCount": 1171,
+    "promptTokenCount": 21757,
+    "totalTokenCount": 22928
+  },
+  "cost": null,
+  "protocol": "google",
+  "text": "```json\n{\n  \"reviewer_model\": \"gemini-4-argon-contributor\",\n  \"overall_verdict\": \"PASS\",\n  \"blocking_findings\": [],\n  \"major_findings\": [],\n  \"minor_findings\": [\n    {\n      \"id\": \"MIN-R4-01\",\n      \"category\": \"schema_ergonomics\",\n      \"description\": \"In `edge_injection_labels.csv`, `synthetic_class` ('fake' vs 'original') is a 1:1 redundant encoding of `is_synthetic_edge` (1 vs 0). However, it aligns with `edge['value'] == 'fake'` in the JSON graph and is explicitly documented as a construction label rather than verified falsity, so it poses no semantic conflict.\"\n    }\n  ],\n  \"verified_checks\": [\n    \"Canonical training label exporter (`src/export_training_labels.py`) cleanly separates node identity (`is_synthetic_node`), node participation in injected edges (`incident_to_synthetic_edge`, `synthetic_in_degree`, `synthetic_out_degree`, `synthetic_total_degree`), edge construction origin (`is_synthetic_edge`, `synthetic_class`), and factual adjudication (`factual_verification_status`).\",\n    \"Original entity objects in `augmented['nodes']` remain completely unmutated; no real Wikidata node is relabeled as `fake`, and `synthetic_nodes` is verified as 0 across all 7,868 nodes (`is_synthetic_node` == 0 for all rows).\",\n    \"Node participation labels accurately identify the 654 nodes incident to at least one synthetic edge (`incident_to_synthetic_edge` == 1), with exact degree breakdowns summing to total synthetic incidence.\",\n    \"Edge training labels cover all 8,511 directed edges in exact index order: 7,737 original edges (`is_synthetic_edge` == 0, `synthetic_class` == 'original', `factual_verification_status` == 'not_adjudicated') and 774 injected edges (`is_synthetic_edge` == 1, `synthetic_class` == 'fake', `factual_verification_status` == 'unresolved').\",\n    \"`augment_graph` in `src/inject_misinformation.py` adds only the `label_tables` metadata pointer dictionary under `metadata.task1_hub_injection` without altering original nodes, original edges, injected triples, provenance, or sampling behavior.\",\n    \"All 53 unit and integration tests pass (`reports/tests_summary.json`, including the 2 new tests in `tests/test_training_labels.py`) with 0 skips, 0 failures, and 0 errors.\",\n    \"Two clean independent runs in `reports/revision_audit/portable_reproduction.json` produce byte-identical SHA-256 hashes across all 6 output artifacts (`pat_kg_poisoned_10pct.json`, `injected_edges.jsonl`, `hub_nodes.csv`, `injection_manifest.json`, `edge_injection_labels.csv`, `node_injection_labels.csv`).\",\n    \"`tools/verify_delivery.py` enforces end-to-end alignment between the serialized graph, manifest hashes, source code hashes, and every row/column of both CSV label tables.\",\n    \"Visual inspection of both attached PNG renders (`injected_by_relation.svg` and `injected_by_type.svg`) confirms clean typography, accurate bar proportions, explicit subtitle disclaimers ('Synthetic injection counts; not verified factual falsity. Unique triples.'), and exact category sums totaling 774 (18 relations summing to 774; 23 entity types summing to 774).\"\n  ],\n  \"unsupported_claims\": [],\n  \"recommended_fixes\": [],\n  \"evidence_references\": [\n    \"src/export_training_labels.py:write_training_labels\",\n    \"src/inject_misinformation.py:augment_graph\",\n    \"run_task1.py:run\",\n    \"tests/test_training_labels.py:TrainingLabelTests\",\n    \"tools/verify_delivery.py:main\",\n    \"outputs/injection_manifest.json:training_labels\",\n    \"outputs/injection_manifest.json:output_sha256\",\n    \"reports/tests_summary.json\",\n    \"reports/revision_audit/portable_reproduction.json\",\n    \"reports/FINAL_REPORT_v2.md\",\n    \"Attached PNG 1: Injected triples by relation (18 bars summing to 774)\",\n    \"Attached PNG 2: Injected triples by swapped general entity type (23 bars summing to 774)\"\n  ],\n  \"remaining_uncertainty\": [\n    \"All 774 synthetic triples remain factually 'unresolved' (with 86/774 purposively checked against live Wikidata and 688 unchecked), which is transparently documented and properly distinguished from synthetic construction labels.\",\n    \"Downstream Task 2 GNN/KGQA training consumption of `edge_injection_labels.csv` and `node_injection_labels.csv` has not been executed in Task 1, which is out of scope for this dataset generation task.\"\n  ]\n}\n```",
+  "elapsed_seconds": 17.719
+}

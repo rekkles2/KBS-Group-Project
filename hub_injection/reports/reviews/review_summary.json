@@ -1,0 +1,79 @@
+{
+  "completed_independent_reviewers": 3,
+  "coordinator_adjudication": "coordinator_adjudication.md",
+  "external_provider": "OpenCode Go",
+  "failed_implementation_attempts": 1,
+  "final_dispositions": [
+    {
+      "http_status": 200,
+      "prompt_sha256": "81c61432c38fa8557d0f4e320bc8aa6b0bf0c57298560be8152aeb3e34e38abc",
+      "response_file": "reports/reviews/reviewer_A_followup_response.json",
+      "reviewer": "A",
+      "session_id": "kbs-task1-review-A_followup-20261016",
+      "usage": {
+        "completion_tokens": 1086,
+        "completion_tokens_details": {
+          "audio_tokens": 0,
+          "reasoning_tokens": 1
+        },
+        "prompt_tokens": 26616,
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cache_write_tokens": 0,
+          "cached_tokens": 2048
+        },
+        "total_tokens": 27702
+      },
+      "verdict": "PASS"
+    },
+    {
+      "http_status": 200,
+      "prompt_sha256": "cd09e02d9b8aa7900914f07fba399bba97581bd8b23222b13f08a6b2a3d40f62",
+      "response_file": "reports/reviews/reviewer_B_response.json",
+      "reviewer": "B",
+      "session_id": "kbs-task1-review-B-20261016",
+      "usage": {
+        "completion_tokens": 1536,
+        "completion_tokens_details": {
+          "audio_tokens": 0,
+          "reasoning_tokens": 1
+        },
+        "prompt_tokens": 21347,
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "total_tokens": 22883
+      },
+      "verdict": "APPROVED_WITH_MINOR_FINDINGS"
+    },
+    {
+      "http_status": 200,
+      "prompt_sha256": "6002f03cf2d40fb18cbb734096917d101b99e11cd942494b738b77d8621b47d4",
+      "response_file": "reports/reviews/reviewer_C_followup_response.json",
+      "reviewer": "C",
+      "session_id": "kbs-task1-review-C_followup-20261016",
+      "usage": {
+        "completion_tokens": 1043,
+        "completion_tokens_details": {
+          "audio_tokens": 0,
+          "reasoning_tokens": 1
+        },
+        "prompt_tokens": 24589,
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cache_write_tokens": 0,
+          "cached_tokens": 2048
+        },
+        "total_tokens": 25632
+      },
+      "verdict": "ACCEPT"
+    }
+  ],
+  "followup_review_calls": 2,
+  "initial_review_calls": 3,
+  "model": "kimi-k2.6",
+  "reviewer_execution": "text-only; no local tool access",
+  "successful_implementation_calls": 1
+}

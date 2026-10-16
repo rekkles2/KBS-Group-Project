@@ -1,0 +1,18 @@
+{
+  "injected_edges_audited": 774,
+  "statuses": {
+    "verified_false": 0,
+    "verified_true": 0,
+    "unresolved": 774
+  },
+  "local_original_graph_matches": 0,
+  "local_QA_matches": 0,
+  "total_relations": 18,
+  "selected_subjects": 40,
+  "external_requests": 4,
+  "successful_requests": 4,
+  "retrieved_subjects": 40,
+  "externally_covered_edges": 86,
+  "edges_with_raw_identical_claim": 0,
+  "errors": []
+}

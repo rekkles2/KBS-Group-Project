@@ -1,0 +1,6 @@
+{
+  "independent_candidate_count": 9853,
+  "independent_QA_positives": 7738,
+  "method": "Independent all-original-triples scan per selected pair, without production candidate-generation helper",
+  "seconds": 1.906
+}

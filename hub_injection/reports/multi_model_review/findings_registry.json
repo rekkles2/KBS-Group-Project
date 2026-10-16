@@ -1,0 +1,872 @@
+{
+  "round": 4,
+  "findings": [
+    {
+      "id": "A-major_findings-1",
+      "reviewer_model": "deepseek-v4-pro",
+      "original_category": "major_findings",
+      "finding": {
+        "file": "src/generate_candidates.py",
+        "function_or_field": "generate_candidates",
+        "record_or_line": "lines 56-67",
+        "problem": "The relation-role compatibility gate is conditional on the endpoint having changed. When an original incident edge has neither endpoint, or both endpoints, equal to one of the hub pair members, no donor-evidence check is applied because neither 'source' nor 'target' appears in 'changed'. This aligns with the stated pair-local transposition adaptation, but it means a candidate can enter the pool solely because its proposed triple differs from all original/QA-positive triples without any empirical domain/range signature validation for that specific edge.",
+        "concrete_evidence_or_counterexample": "A hub-pair edge where old_source==a and old_target==b produces source=b,target=a; both positions appear changed, so both donor checks run. However, if neither endpoint is a hub, changed is empty and the candidate is rejected only when proposed equals original (which it must), effectively contributing one guaranteed rejection path. More materially, lines 64-67 only require evidence for swapped donors, so an edge whose sole swapped position's donor happens to pass evidence is indistinguishable in policy from one with no evidence check if no endpoint changes; the latter cannot be a candidate unless zero endpoints change and the triple is unchanged (rejected as original). Thus practically every accepted candidate receives at least one role-evidence check because at least one endpoint changes under the pair mapping. The conditional remains a documentation nuance rather than a defect.",
+        "severity": "low",
+        "repair_or_test": "Add an assertion or explicit counter documenting that accepted candidates always have at least one changed position when hub_pair members differ and the source edge is incident to at least one member, and confirm in diagnostics that no accepted candidate has zero changed positions. A unit test asserting all accepted candidates have non-empty changed_positions would make the intent explicit."
+      },
+      "classification": "unsupported_claim",
+      "decision": "refuted_additional_test",
+      "evidence": "Only incident edges are visited, distinct pair transposition changes at least one position, and both changed donors are checked. Added explicit nonempty changed-position regression."
+    },
+    {
+      "id": "A-major_findings-2",
+      "reviewer_model": "deepseek-v4-pro",
+      "original_category": "major_findings",
+      "finding": {
+        "file": "src/inject_misinformation.py",
+        "function_or_field": "balanced_sample",
+        "record_or_line": "lines 21-56",
+        "problem": "The sampling procedure re-sorts buckets deterministically by triple after applying two rounds of seeded shuffling. The final per-bucket order mixes deterministic sorting and seeded shuffling, which is acceptable, but the round-robin iterator over relation cursors can revisit a relation whose bucket remains non-empty and pop from the tail of the shuffled list. This is deterministic for a fixed seed and Python version, and is individually reasonable, but the documentation claims 'round-robin types, then relations within each type; seeded bucket order' without stating the exhaustion semantics. It is not proportional to original distribution, which is explicitly disclosed, but the exact tie-breaking between shuffles and sorts is under-specified.",
+        "concrete_evidence_or_counterexample": "Lines 38-39 and 43-50: after rng.shuffle(buckets[kind][relation]), line 38 sorts by triple, then line 39 reshuffles. The cursor loop selects from buckets until empty, potentially cycling relation lists multiple times. The resulting order is reproducible but its statistical balancing properties are not documented beyond 'round-robin'.",
+        "severity": "low",
+        "repair_or_test": "Add one sentence in README or function docstring stating that relation buckets are shuffles over a deterministic sorted order, and that exhausted relation buckets are skipped while other buckets in the same type remain non-empty. No functional change is required."
+      },
+      "classification": "unsupported_claim",
+      "decision": "refuted_or_clarified",
+      "evidence": "sampling_sort_counterexample.json proves pre-shuffle sort makes fixed-seed selection independent of input order. Exhausted buckets are intentionally skipped; documentation clarified."
+    },
+    {
+      "id": "A-major_findings-3",
+      "reviewer_model": "deepseek-v4-pro",
+      "original_category": "major_findings",
+      "finding": {
+        "file": "src/snapshot_visibility.py",
+        "function_or_field": "build_injection_visibility",
+        "record_or_line": "lines 4-22",
+        "problem": "Activation is computed only for endpoints of injected edges whose injection_snapshots include a snapshot. For a snapshot where an injected edge inherits visibility from a source edge whose observed_in_snapshots includes that snapshot, the endpoint may already have an unrelated original QA observation; the activation set condition correctly excludes already-observed nodes. However, the count 'injected_visible_edges' is derived before node existence validation and before deduplication of edges that are visible in multiple snapshots, which is correct per edge-snapshot semantics but may be misread as a count of unique synthetic edges across snapshots.",
+        "concrete_evidence_or_counterexample": "The report tables show Dec2021 642, Dec2023 649, March2024 609, summing to 1900 visible edge-snapshot pairs for 774 unique injected edges, which is expected because edge snapshot lists overlap. The field name 'injected_visible_edges' in each snapshot's record could be read as unique edges per snapshot rather than edge-snapshot counts; the README does clarify this, but the machine-readable key is ambiguous.",
+        "severity": "low",
+        "repair_or_test": "Rename or document 'injected_visible_edges' as 'injected_visible_edge_snapshot_pairs' in a backward-compatible manner, or at minimum add a schema note in the metadata namespace."
+      },
+      "classification": "methodological_or_editorial",
+      "decision": "documented_limit_or_optional_hardening",
+      "evidence": "No concrete failing current-release case; preserved as optional feedback."
+    },
+    {
+      "id": "A-major_findings-4",
+      "reviewer_model": "deepseek-v4-pro",
+      "original_category": "major_findings",
+      "finding": {
+        "file": "tools/analyze_structure_v2.py",
+        "function_or_field": "random_baseline",
+        "record_or_line": "lines 147-205",
+        "problem": "The baseline explicitly refuses injected edges with more than one swapped position (line 167-168). The actual injected records include candidate swaps that frequently change both source and target positions; the structural comparison therefore draws from a baseline restricted to one-position swaps, while the hub diagnostics compute over all 774 injected edges. This is disclosed as an unmatched-strata limitation, but it means the controlled random comparison is not stratum-identical for the full injection set.",
+        "concrete_evidence_or_counterexample": "Synthetic record samples contain 'swaps' with only one position changed, but tests/test_structure_v2.py includes a rejection path for two-position swaps and the actual injected distribution in injection_manifest/structural_metrics includes multiple 'changed_positions' categories. The baseline runs complete for all 774 edges only if every actual swap has exactly one position; otherwise main() would raise. Since the delivered structural report completed, either all 774 have one position or the multi-position paths are absent from the randomized comparison.",
+        "severity": "medium",
+        "repair_or_test": "Clarify how many of the 774 injected edges have two-position swaps. If any do, the random_baseline rejection condition contradicts the completed report and the delivered structural comparison is incomplete or silently filtered. Add an explicit count, or extend the baseline to support two-position pair transpositions with role compatibility on both endpoints."
+      },
+      "classification": "unsupported_claim",
+      "decision": "refuted_by_complete_data",
+      "evidence": "Actual records and structural JSON have388 source-only386 target-only0 two-position. All774 included in every one of10 random runs; no filtering. Explicit counts added to report."
+    },
+    {
+      "id": "A-major_findings-5",
+      "reviewer_model": "deepseek-v4-pro",
+      "original_category": "major_findings",
+      "finding": {
+        "file": "tools/analyze_structure_v2.py",
+        "function_or_field": "edge_diagnostics / alternative_path_fraction",
+        "record_or_line": "lines 106-140",
+        "problem": "Alternative-path availability is measured after adding all injected edges except the tested edge, allowing paths through other synthetic edges. This is explicitly disclosed, but the interpretation table labels the metric 'alternative-path availability' without consistently carrying the 'may use other synthetic triples' caveat into the downstream bounded-interpretation paragraph. The reader could infer the injected edge adds a genuinely novel alternative route rather than reflecting collective synthetic concentration.",
+        "concrete_evidence_or_counterexample": "README line 43 and structural_support.md lines 9 and 44-45 note the mixed result and the caveat in the definitions section, but the final scientific-bounded-interpretation paragraph does not repeat the synthetic-path caveat when it reports 99.87% versus 92.69%.",
+        "severity": "low",
+        "repair_or_test": "Repeat the synthetic-path dependency caveat in the bounded-interpretation paragraph or rename the metric to 'alternative_path_fraction_in_augmented_graph' throughout the report."
+      },
+      "classification": "methodological_or_editorial",
+      "decision": "documented_limit_or_optional_hardening",
+      "evidence": "No concrete failing current-release case; preserved as optional feedback."
+    },
+    {
+      "id": "A-minor_findings-1",
+      "reviewer_model": "deepseek-v4-pro",
+      "original_category": "minor_findings",
+      "finding": {
+        "file": "src/factual_verification.py",
+        "function_or_field": "_usable",
+        "record_or_line": "lines 16-24",
+        "problem": "The reason field is required to be truthy but not otherwise constrained, and evidence_refs must be truthy. This is sufficient for conservative adjudication, but the absence of a schema validator means a malformed but non-empty reason string would still mark a claim as usable.",
+        "concrete_evidence_or_counterexample": "A record with reason='trust me' and evidence_refs=['x'] would pass _usable if all other fields match. The test fixtures use explicit, realistic reasons, so this is a hardening gap rather than an observed defect.",
+        "severity": "minor",
+        "repair_or_test": "Add a lightweight schema check requiring reason length and evidence_refs item structure in the consensus adjudication path."
+      },
+      "classification": "methodological_or_editorial",
+      "decision": "documented_limit_or_optional_hardening",
+      "evidence": "No concrete failing current-release case; preserved as optional feedback."
+    },
+    {
+      "id": "A-minor_findings-2",
+      "reviewer_model": "deepseek-v4-pro",
+      "original_category": "minor_findings",
+      "finding": {
+        "file": "src/validate_original.py",
+        "function_or_field": "qa_positive_triples",
+        "record_or_line": "lines 11-37",
+        "problem": "The function does not validate that snapshot field values are consistent for duplicated intermediate entities across multiple records; duplicate intermediate QIDs are deduplicated per question, which is correct, but the audit reports 20 QA records with duplicate intermediate QIDs and no test asserts these duplicates are equivalent to a unique intermediate set. The handling is conservative and deliberately avoids cross-product inference.",
+        "concrete_evidence_or_counterexample": "tests/test_original_audit.py line 20 asserts exactly 20 duplicate-intermediate records, and test_injection.py verifies no false second-hop pairing. This is adequately covered.",
+        "severity": "minor",
+        "repair_or_test": "No change required; consider adding a comment that duplicate annotation equivalence is assumed for the same QID."
+      },
+      "classification": "methodological_or_editorial",
+      "decision": "documented_limit_or_optional_hardening",
+      "evidence": "No concrete failing current-release case; preserved as optional feedback."
+    },
+    {
+      "id": "A-minor_findings-3",
+      "reviewer_model": "deepseek-v4-pro",
+      "original_category": "minor_findings",
+      "finding": {
+        "file": "src/report_statistics.py",
+        "function_or_field": "bar_chart",
+        "record_or_line": "lines 60-73",
+        "problem": "Chart count labels are drawn directly from data after sorting by label, and the SVG is not XML-escaped for label text beyond html.escape on title/label. Numeric values are inserted unescaped into text nodes, which is safe for integers and CSV-derived labels.",
+        "concrete_evidence_or_counterexample": "Injected relation/type labels are PIDs and entity type names from validated data; no injection path exists from the graph to chart labels. The vulnerability is theoretical.",
+        "severity": "minor",
+        "repair_or_test": "No repair required; optionally add html.escape around numeric labels if generated data could ever include non-numeric types."
+      },
+      "classification": "methodological_or_editorial",
+      "decision": "documented_limit_or_optional_hardening",
+      "evidence": "No concrete failing current-release case; preserved as optional feedback."
+    },
+    {
+      "id": "A-minor_findings-4",
+      "reviewer_model": "deepseek-v4-pro",
+      "original_category": "minor_findings",
+      "finding": {
+        "file": "tools/package_release_v2.py",
+        "function_or_field": "included",
+        "record_or_line": "lines 29-34",
+        "problem": "SECRET_NAMES excludes only exact filename matches. A credential file with a different name such as credentials.json would be included if under RUNTIME_DIRS. The test only checks api_key.txt and .opencode-local.",
+        "concrete_evidence_or_counterexample": "The delivered package manifest is not included in the supplied files, but the code itself cannot detect all possible credential naming conventions. This is a best-effort exclusion policy, documented as explicit filename/path exclusions.",
+        "severity": "minor",
+        "repair_or_test": "Document that credential exclusion is allowlist-based by path pattern and may not cover arbitrary filenames, or scan for common key patterns."
+      },
+      "classification": "methodological_or_editorial",
+      "decision": "documented_limit_or_optional_hardening",
+      "evidence": "No concrete failing current-release case; preserved as optional feedback."
+    },
+    {
+      "id": "A-minor_findings-5",
+      "reviewer_model": "deepseek-v4-pro",
+      "original_category": "minor_findings",
+      "finding": {
+        "file": "README.md",
+        "function_or_field": "Validation and delivery",
+        "record_or_line": "line 49",
+        "problem": "The README claims 'three full CLI runs of the real data under python -E -S', matching tests/test_reproducibility.py, but the reports/revision_audit/portable_reproduction.json shows only two clean runs (run_0 and run_1) plus the canonical delivered outputs. This is not a contradiction because the portable check intentionally compares two runs, while the reproducibility test suite in the main project performs three subprocess runs including seed 43.",
+        "concrete_evidence_or_counterexample": "portable_reproduction.json contains two run_output_sha256 entries and two run_logs entries, consistent with check_clean_regeneration looping range(2). The README's 'three full CLI runs' refers to run_tests.py's ActualDatasetIntegrationTests with seeds [42,42,43].",
+        "severity": "minor",
+        "repair_or_test": "Clarify which report corresponds to which 'three runs' claim to avoid reviewer confusion."
+      },
+      "classification": "methodological_or_editorial",
+      "decision": "documented_limit_or_optional_hardening",
+      "evidence": "No concrete failing current-release case; preserved as optional feedback."
+    },
+    {
+      "id": "A-minor_findings-6",
+      "reviewer_model": "deepseek-v4-pro",
+      "original_category": "minor_findings",
+      "finding": {
+        "file": "outputs/injection_manifest.json",
+        "function_or_field": "expansion_history",
+        "record_or_line": "lines 51-101",
+        "problem": "The expansion history contains a single entry with expansion_rounds reported as 0 in the portable reproduction stdout. The while loop in run_task1.py appends one history entry before checking candidate sufficiency, so exactly one entry plus zero expansions is consistent with immediate sufficiency.",
+        "concrete_evidence_or_counterexample": "portable_reproduction.json stdout shows expansion_rounds:0 and the manifest's expansion_history has one item. This is internally consistent.",
+        "severity": "minor",
+        "repair_or_test": "No repair required; optionally note that expansion_history length equals expansion_rounds+1 in the manifest schema."
+      },
+      "classification": "methodological_or_editorial",
+      "decision": "documented_limit_or_optional_hardening",
+      "evidence": "No concrete failing current-release case; preserved as optional feedback."
+    },
+    {
+      "id": "B-minor_findings-1",
+      "reviewer_model": "glm-5.3",
+      "original_category": "minor_findings",
+      "finding": {
+        "file": "reports/revision_audit/factual_verification_summary.md",
+        "function_or_field": "externally_covered_edges",
+        "record_or_line": "16, 18-19",
+        "problem": "Current Wikidata external coverage is only 86 of 774 injected edges (11.1%), from a purposive 40-subject sample; 688 edges have no external evidence check at all.",
+        "concrete_evidence_or_counterexample": "'externally_covered_edges': 86, 'retrieved_subjects': 40, 'selected_subjects': 40; 774-86=688 edges lack any current-statement coverage.",
+        "severity": "minor",
+        "repair_or_test": "The report honestly labels this as purposive and non-statistical, and correctly refuses truth conclusions; optionally widen the subject sample or state the 11.1% fraction explicitly in README."
+      },
+      "classification": "methodological_limit",
+      "decision": "retained_disclosed_coverage_limit",
+      "evidence": "All774 local checks; purposeful external86/774=11.1%,688notexternallylookedup. No falsehood inference. README and handoff now carry fraction."
+    },
+    {
+      "id": "B-minor_findings-2",
+      "reviewer_model": "glm-5.3",
+      "original_category": "minor_findings",
+      "finding": {
+        "file": "README.md",
+        "function_or_field": "Revised diagnostics / delivery references",
+        "record_or_line": "39, 43, 3",
+        "problem": "Files referenced as evidence (tools/audit_facts_v2.py, tools/audit_visuals_v2.py rendering audit, reports/FINAL_REPORT_v2.md, REPRODUCTION_v2.md, CN report, and the 'actual before/after rendered inspection' of the two SVGs) are not present in the supplied material; only audit_visuals_v2.audit_chart is indirectly evidenced via tests/test_portable_v2.py.",
+        "concrete_evidence_or_counterexample": "tests/test_portable_v2.py line 9 imports tools.audit_visuals_v2.audit_chart, proving the module exists, but no supplied file substantiates a rendered (visual) inspection or the final-report contents.",
+        "severity": "minor",
+        "repair_or_test": "Ship the referenced reports and audit_facts_v2.py in the review bundle, or reword the 'rendered inspection' claim as a self-reported manual step."
+      },
+      "classification": "confirmed_review_evidence_gap",
+      "decision": "review_bundle_expanded",
+      "evidence": "Round02 includes factual audit code, actual visual inspection report, bilingual reproduction evidence and generated v2 handoff. Images attached only to Gemini; text models see visual audit evidence, not images."
+    },
+    {
+      "id": "B-minor_findings-3",
+      "reviewer_model": "glm-5.3",
+      "original_category": "minor_findings",
+      "finding": {
+        "file": "README.md",
+        "function_or_field": "default graph filename",
+        "record_or_line": "17",
+        "problem": "outputs/pat_kg_poisoned_10pct.json is a fixed filename; a run with a different ratio overwrites/reuses the 10pct-named file, a mild misleading-artifact risk.",
+        "concrete_evidence_or_counterexample": "run_task1.py line 81 always writes 'pat_kg_poisoned_10pct.json' regardless of --injection-ratio.",
+        "severity": "minor",
+        "repair_or_test": "README already flags the fixed name; consider including the ratio in injection_manifest-driven naming or refusing a non-default ratio under this filename."
+      },
+      "classification": "methodological_or_editorial",
+      "decision": "documented_limit_or_optional_hardening",
+      "evidence": "No concrete failing current-release case; preserved as optional feedback."
+    },
+    {
+      "id": "C-major_findings-1",
+      "reviewer_model": "qwen3.8-max",
+      "original_category": "major_findings",
+      "finding": {
+        "file": "src/inject_misinformation.py",
+        "function_or_field": "balanced_sample",
+        "record_or_line": "38-39",
+        "problem": "Candidates within each relation bucket are sorted deterministically by triple then immediately shuffled with the seeded RNG, making the sort dead code and obscuring the actual selection order.",
+        "concrete_evidence_or_counterexample": "Line 38: `buckets[kind][relation].sort(key=triple)` followed by line 39: `rng.shuffle(buckets[kind][relation])`. The sort has no effect on the output because shuffle randomizes the list in place before any `.pop()` calls. Determinism relies entirely on the seed, not the sort.",
+        "severity": "medium",
+        "repair_or_test": "Remove the redundant sort or document that it exists solely for pre-shuffle auditability. Add a unit test confirming that removing the sort produces identical byte-level output under the same seed."
+      },
+      "classification": "unsupported_claim",
+      "decision": "refuted_or_clarified",
+      "evidence": "sampling_sort_counterexample.json proves pre-shuffle sort makes fixed-seed selection independent of input order. Exhausted buckets are intentionally skipped; documentation clarified."
+    },
+    {
+      "id": "C-major_findings-2",
+      "reviewer_model": "qwen3.8-max",
+      "original_category": "major_findings",
+      "finding": {
+        "file": "run_task1.py",
+        "function_or_field": "run",
+        "record_or_line": "62-64",
+        "problem": "Source code SHA-256 manifest only hashes files directly inside `src/` and `run_task1.py`, omitting all scripts under `tools/` and `tests/` that are part of the delivered reproduction pipeline.",
+        "concrete_evidence_or_counterexample": "Lines 62-64 iterate `(ROOT / 'src').glob('*.py')` and add `run_task1.py`. Tools like `analyze_structure_v2.py`, `audit_facts_v2.py`, `package_release_v2.py`, and `export_snapshot_v2.py` are excluded from `source_code_sha256` in `outputs/injection_manifest.json`. A tampered tool would not be detected by manifest verification.",
+        "severity": "medium",
+        "repair_or_test": "Extend source hashing to include `tools/*.py` and `tests/*.py`, or explicitly document that the manifest covers only the generation pipeline and not diagnostic/test scripts."
+      },
+      "classification": "confirmed_coverage_gap",
+      "decision": "fixed",
+      "evidence": "run_task1.py now hashes src/tests/tools, both entry scripts, config and requirements; canonical pipeline regenerated and independent-copy tests rerun."
+    },
+    {
+      "id": "C-minor_findings-1",
+      "reviewer_model": "qwen3.8-max",
+      "original_category": "minor_findings",
+      "finding": {
+        "file": "src/compute_degrees.py",
+        "function_or_field": "compute_degrees",
+        "record_or_line": "7-9",
+        "problem": "No defensive check for edges referencing nodes absent from the graph. While `validate_original` catches this earlier, `compute_degrees` will raise an unhandled KeyError if called independently on malformed input.",
+        "concrete_evidence_or_counterexample": "Lines 8-9 access `degrees[edge['source']]` and `degrees[edge['target']]` directly. If an edge contains a dangling reference, this crashes rather than returning a diagnostic.",
+        "severity": "low",
+        "repair_or_test": "Add a guard or rely on documented precondition that inputs must pass validation first."
+      },
+      "classification": "methodological_or_editorial",
+      "decision": "documented_limit_or_optional_hardening",
+      "evidence": "No concrete failing current-release case; preserved as optional feedback."
+    },
+    {
+      "id": "C-minor_findings-2",
+      "reviewer_model": "qwen3.8-max",
+      "original_category": "minor_findings",
+      "finding": {
+        "file": "src/report_statistics.py",
+        "function_or_field": "injection_statistics",
+        "record_or_line": "47-48",
+        "problem": "Hub pair and changed positions keys use `'|'.join(...)` which could theoretically collide if QIDs or position strings contained pipe characters, though current schemas prevent this.",
+        "concrete_evidence_or_counterexample": "Line 47: `'by_hub_pair': dict(sorted(Counter('|'.join(e['injection_provenance']['hub_pair']) for e in edges).items()))`. Safe under current QID regex but fragile if schema evolves.",
+        "severity": "low",
+        "repair_or_test": "Use tuple keys or a delimiter guaranteed absent from identifiers."
+      },
+      "classification": "methodological_or_editorial",
+      "decision": "documented_limit_or_optional_hardening",
+      "evidence": "No concrete failing current-release case; preserved as optional feedback."
+    },
+    {
+      "id": "C-minor_findings-3",
+      "reviewer_model": "qwen3.8-max",
+      "original_category": "minor_findings",
+      "finding": {
+        "file": "tests/test_reproducibility.py",
+        "function_or_field": "ActualDatasetIntegrationTests",
+        "record_or_line": "28",
+        "problem": "The 180-second timeout per subprocess run may be insufficient on slower CI hardware, causing flaky test failures unrelated to correctness.",
+        "concrete_evidence_or_counterexample": "Line 28: `timeout=180`. Three sequential runs means up to 9 minutes just for timeout exhaustion.",
+        "severity": "low",
+        "repair_or_test": "Make timeout configurable via environment variable or increase default for CI contexts."
+      },
+      "classification": "methodological_or_editorial",
+      "decision": "documented_limit_or_optional_hardening",
+      "evidence": "No concrete failing current-release case; preserved as optional feedback."
+    },
+    {
+      "id": "D-minor_findings-1",
+      "reviewer_model": "gemini-4-argon-contributor",
+      "original_category": "minor_findings",
+      "finding": {
+        "file": "src/report_statistics.py",
+        "function_or_field": "bar_chart",
+        "record_or_line": "lines 60-73; attached PNGs injected_by_relation.png and injected_by_type.png",
+        "problem": "The relation bar chart displays raw Wikidata property IDs (P102, P108, ..., P69) without human-readable labels, and neither chart embeds an accessible HTML/SVG data table or explicit x-axis scale.",
+        "concrete_evidence_or_counterexample": "In attached image 1 (`injected_by_relation.png`), category labels are rendered strictly as `P102` through `P69`. `reports/revision_audit/visual_review.md` (lines 31-33) explicitly notes that exact property IDs were retained to avoid invented names and that machine-readable JSON supplies exact values instead of an embedded screen-reader table.",
+        "severity": "minor",
+        "repair_or_test": "Optional for future publication formatting: append canonical relation labels from `graph['relations']` alongside property IDs (e.g., `P488 (chairperson)`) if available in the input schema, while keeping exact integer bar labels."
+      },
+      "classification": "methodological_or_editorial",
+      "decision": "documented_limit_or_optional_hardening",
+      "evidence": "No concrete failing current-release case; preserved as optional feedback."
+    },
+    {
+      "id": "D-minor_findings-2",
+      "reviewer_model": "gemini-4-argon-contributor",
+      "original_category": "minor_findings",
+      "finding": {
+        "file": "reports/revision_audit/00_baseline_audit.md",
+        "function_or_field": "timestamp / backup_directory",
+        "record_or_line": "lines 7-8; reports/revision_audit/visual_review.md line 12",
+        "problem": "The baseline backup directory name and timestamp record an anomalous month (`20261016T103451+0900`, October 2026).",
+        "concrete_evidence_or_counterexample": "`00_baseline_audit.md` line 7: `\"timestamp\": \"20261016T103451+0900\"`.",
+        "severity": "minor",
+        "repair_or_test": "Preserve existing backup path references for audit provenance, or document that the directory string is a literal identifier rather than a calibrated UTC clock check."
+      },
+      "classification": "unsupported_claim",
+      "decision": "refuted_by_task_date",
+      "evidence": "Client supplied date2026-10-16 Asia/Seoul; baseline timestamp20261016 is consistent. Backup provenance retained unchanged."
+    },
+    {
+      "id": "ROOT-TRUTH-01",
+      "classification": "confirmed_bug",
+      "decision": "fixed_and_regression_passed",
+      "finding": {
+        "file": "src/validate_poisoned.py",
+        "problem": "A fabricated verified_false annotation with a nonempty unsupported citation passed the old validator."
+      },
+      "evidence": "Executed pre-fix mutation returned passed=True. Validator now rederives factual annotations in explicit evidence context; test_unsupported_factual_truth_tamper_is_rejected passes."
+    },
+    {
+      "id": "R2-A-major_findings-1",
+      "finding": {
+        "file": "tools/analyze_structure_v2.py",
+        "function_or_field": "edge_diagnostics / alternative_path_fraction",
+        "record_or_line": "lines 106-140; report lines 44-46",
+        "problem": "The bounded-interpretation paragraph reports the augmented alternative-path fraction (99.87% vs 92.69% random mean) without carrying the synthetic-path dependency caveat into that same paragraph. The definitions section does state paths may use other synthetic triples, but a reader of the final interpretive paragraph could still infer that each injected edge independently creates a novel alternative route, rather than reflecting collective synthetic-edge concentration.",
+        "concrete_evidence_or_counterexample": "structural_support.md line 9 explicitly states alternative paths 'may use other synthetic triples', but line 46 says only 'After augmentation, alternative-path availability is 99.87% versus random mean 92.69%' without repeating that dependency. The metric name 'alternative_path_fraction' in the comparison table likewise lacks the 'augmented graph' qualifier visible to the reader of that table.",
+        "severity": "medium",
+        "repair_or_test": "Already flagged in prior round and preserved. The delivered report remains internally honest in the definitions section, but the proximity of the unqualified metric name to the strong numerical difference makes this a genuine editorial risk for downstream inference. Recommend renaming the comparison key to 'alternative_path_fraction_in_augmented_graph' or adding one parenthetical caveat sentence at line 46. No factual or methodological defect in the computation itself."
+      },
+      "original_category": "major_findings",
+      "classification": "editorial_or_explicit_limitation",
+      "decision": "clarified_in_canonical_report_generator",
+      "evidence": "Report generation and final handoff now repeat that augmented alternative paths may use other synthetic edges."
+    },
+    {
+      "id": "R2-A-major_findings-2",
+      "finding": {
+        "file": "tools/analyze_structure_v2.py",
+        "function_or_field": "random_baseline",
+        "record_or_line": "lines 164-178; structural_support.md lines 40-41",
+        "problem": "The baseline intentionally does not control the donor's own relation-role evidence as rigorously as the production candidate generator. Production `generate_candidates` requires, for each changed position, that the donor possess original directed evidence for the exact relation and counterpart general type. The baseline pools donors from the global role signature `(position, relation, counterpart general type)`, which is the same property, but it does not ensure the donated endpoint belongs to a selected hub pair with an original incident edge, nor does it preserve the source-edge derivation constraint in the same way. This is a disclosed conditional baseline, but the small endpoint-degree gap (4.58204 vs 4.40795) is interpreted cautiously, which is appropriate; nevertheless, the baseline is not a precise null for the candidate-generation mechanism.",
+        "concrete_evidence_or_counterexample": "random_baseline derives `pool` only from role[(position, base relation, counterpart general type)] and eligibility, then shuffles. It does not require the donor to have been selected as a hub under total_degree ranking, nor that the donor has an incident edge with the source counterpart, unlike production candidate enumeration over selected hub pairs and original incident edges. The report calls this a conditional descriptive comparison and warns it is not causal, so this is an honest limitation, but the phrasing 'controlled random comparison' may still overstate the degree of mechanism matching.",
+        "severity": "medium",
+        "repair_or_test": "Optional hardening: extend `random_baseline` to optionally restrict donors to selected hubs for a second variant, or explicitly label the current baseline as 'role-and-degree-bin-conditional, not hub-ranked/incident-edge null'. The report already cautions against fairness claims, so this is a documentation nuance, not a blocking defect."
+      },
+      "original_category": "major_findings",
+      "classification": "editorial_or_explicit_limitation",
+      "decision": "clarified_conditional_baseline",
+      "evidence": "Non-hub-ranked donor selection is intentional random diagnostic. Same original role+counterpart type is enforced. Exact-null/causal claims disclaimed in canonical report generator."
+    },
+    {
+      "id": "R2-A-major_findings-3",
+      "finding": {
+        "file": "src/generate_candidates.py",
+        "function_or_field": "generate_candidates",
+        "record_or_line": "lines 56-67",
+        "problem": "The conditional relation-role gate application is structurally sound in the supplied version because every accepted candidate has at least one changed position, and the corresponding donor-evidence check is executed for each changed position. The prior concern about an evidence-free candidate only holds when `changed` is empty, which implies `proposed` equals the original triple and is therefore rejected as `original_triple`. No accepted candidate can bypass role evidence.",
+        "concrete_evidence_or_counterexample": "tests/test_revision_schema.test_every_accepted_candidate_has_a_changed_position passes, and the candidate diagnostics show zero accepted candidates with empty changed_positions. The explicit non-empty assertion is now present in the test suite.",
+        "severity": "low",
+        "repair_or_test": "Resolved in the revised delivery. Keep the regression test for non-empty changed_positions."
+      },
+      "original_category": "major_findings",
+      "classification": "editorial_or_explicit_limitation",
+      "decision": "retained_optional_or_resolved",
+      "evidence": "No failing implementation counterexample; preserve raw feedback and scope limitation."
+    },
+    {
+      "id": "R2-A-major_findings-4",
+      "finding": {
+        "file": "src/inject_misinformation.py",
+        "function_or_field": "balanced_sample",
+        "record_or_line": "lines 38-39",
+        "problem": "Sorting by triple before seeded shuffle is not dead code: it establishes deterministic pre-shuffle input order so that the same seed produces identical selection even when the caller passes a reordered candidate list. The previous finding incorrectly treated the sort as redundant. The sampling_sort_counterexample.json demonstrates caller-order dependence if the sort is removed. However, the bucket-skip semantics when a type has exhausted relations while other types still have candidates remains non-obvious from the function alone, though README line 45 now documents it.",
+        "concrete_evidence_or_counterexample": "reports/revision_audit/sampling_sort_counterexample.json has production_sort_makes_input_order_irrelevant=true and removing_sort_changes_selection_under_reordered_input=true. The delivered README now states 'exhausted buckets are skipped while remaining buckets are sampled'.",
+        "severity": "low",
+        "repair_or_test": "Resolved in the revised delivery. The delivered documentation covers the exhaustion semantics."
+      },
+      "original_category": "major_findings",
+      "classification": "editorial_or_explicit_limitation",
+      "decision": "retained_optional_or_resolved",
+      "evidence": "No failing implementation counterexample; preserve raw feedback and scope limitation."
+    },
+    {
+      "id": "R2-A-minor_findings-1",
+      "finding": {
+        "file": "src/factual_verification.py",
+        "function_or_field": "_usable",
+        "record_or_line": "lines 16-24",
+        "problem": "The consensus evidence record requires independently_reviewed, direct_claim_evidence, scope_matches_claim, and nonempty evidence_refs/temporal_scope/reason, but there is no structural validation of evidence_refs items or reason content. This is a hardening gap, not an observed defect, because all current test records are realistic and the pipeline never auto-adjudicates from raw data.",
+        "concrete_evidence_or_counterexample": "A fabricated record with reason='trust me' and evidence_refs=['x'] would satisfy _usable if other fields match. This is an externally supplied evidence cache scenario, not reachable from the canonical generator.",
+        "severity": "minor",
+        "repair_or_test": "Optional: require evidence_refs entries to be nonempty strings matching a reference pattern, and/or a minimum reason length. Document as optional hardening."
+      },
+      "original_category": "minor_findings",
+      "classification": "editorial_or_explicit_limitation",
+      "decision": "retained_optional_or_resolved",
+      "evidence": "No failing implementation counterexample; preserve raw feedback and scope limitation."
+    },
+    {
+      "id": "R2-A-minor_findings-2",
+      "finding": {
+        "file": "src/report_statistics.py",
+        "function_or_field": "injection_statistics",
+        "record_or_line": "lines 47-48",
+        "problem": "Composite keys use pipe-joined QIDs and position strings. Safe under current QID/PID regex constraints, but theoretically vulnerable to delimiter collision under schema evolution.",
+        "concrete_evidence_or_counterexample": "QIDs are matched by `^Q[1-9][0-9]*$` and PIDs similarly, so '|' cannot occur in these identifiers. The risk is purely hypothetical.",
+        "severity": "minor",
+        "repair_or_test": "Optional: use tuple keys instead of joined strings."
+      },
+      "original_category": "minor_findings",
+      "classification": "editorial_or_explicit_limitation",
+      "decision": "retained_optional_or_resolved",
+      "evidence": "No failing implementation counterexample; preserve raw feedback and scope limitation."
+    },
+    {
+      "id": "R2-A-minor_findings-3",
+      "finding": {
+        "file": "src/snapshot_visibility.py",
+        "function_or_field": "build_injection_visibility",
+        "record_or_line": "lines 4-22",
+        "problem": "The key 'injected_visible_edges' names edge-snapshot pairs, not unique synthetic edges across all snapshots. The per-snapshot sums (642+649+609=1900) exceed the unique injected edge count (774), so downstream automated consumers could mis-sum.",
+        "concrete_evidence_or_counterexample": "Structural report table shows the same per-snapshot counts as the baseline audit and README clarifies overlap, but the key name itself remains ambiguous.",
+        "severity": "minor",
+        "repair_or_test": "Optional: rename or add a sibling key 'injected_visible_edge_snapshot_pairs' while preserving backward compatibility."
+      },
+      "original_category": "minor_findings",
+      "classification": "editorial_or_explicit_limitation",
+      "decision": "retained_optional_or_resolved",
+      "evidence": "No failing implementation counterexample; preserve raw feedback and scope limitation."
+    },
+    {
+      "id": "R2-A-minor_findings-4",
+      "finding": {
+        "file": "src/validate_original.py",
+        "function_or_field": "qa_positive_triples",
+        "record_or_line": "lines 11-37",
+        "problem": "Duplicate intermediate QIDs are deduplicated, but no assertion documents that duplicate annotation equivalence is assumed. This is adequately conservative and tested, but a brief comment would remove reviewer ambiguity.",
+        "concrete_evidence_or_counterexample": "test_injection.py verifies no false second-hop pairing when multiple intermediates exist; test_original_audit.py confirms 20 such records. No functional issue found.",
+        "severity": "minor",
+        "repair_or_test": "Optional comment only."
+      },
+      "original_category": "minor_findings",
+      "classification": "editorial_or_explicit_limitation",
+      "decision": "retained_optional_or_resolved",
+      "evidence": "No failing implementation counterexample; preserve raw feedback and scope limitation."
+    },
+    {
+      "id": "R2-A-minor_findings-5",
+      "finding": {
+        "file": "tools/package_release_v2.py",
+        "function_or_field": "included",
+        "record_or_line": "lines 29-34",
+        "problem": "Credential exclusion uses exact filename/path allowlists, so a differently named secret (e.g., credentials.json) under a runtime directory would be packaged.",
+        "concrete_evidence_or_counterexample": "The delivered package was clean, and the documented policy explicitly scopes exclusions by explicit filenames. The risk is best-effort by design.",
+        "severity": "minor",
+        "repair_or_test": "Optional: add pattern-based secret detection or document that non-enumerated filenames are not excluded."
+      },
+      "original_category": "minor_findings",
+      "classification": "editorial_or_explicit_limitation",
+      "decision": "retained_optional_or_resolved",
+      "evidence": "No failing implementation counterexample; preserve raw feedback and scope limitation."
+    },
+    {
+      "id": "R2-A-minor_findings-6",
+      "finding": {
+        "file": "README.md",
+        "function_or_field": "Validation and delivery",
+        "record_or_line": "line 49",
+        "problem": "'Three full CLI runs' refers to test_reproducibility.py's seeds [42,42,43], while portable_reproduction.json contains only two clean regeneration runs plus canonical comparison. Internally consistent but easy to misread.",
+        "concrete_evidence_or_counterexample": "portable_reproduction.json shows two run_logs entries and two run_output_sha256 entries; test_reproducibility.py runs three subprocesses. No contradiction exists.",
+        "severity": "minor",
+        "repair_or_test": "Optional clarification to avoid cross-document reader confusion."
+      },
+      "original_category": "minor_findings",
+      "classification": "editorial_or_explicit_limitation",
+      "decision": "retained_optional_or_resolved",
+      "evidence": "No failing implementation counterexample; preserve raw feedback and scope limitation."
+    },
+    {
+      "id": "R2-B-minor_findings-1",
+      "finding": {
+        "file": "reports/revision_audit/visual_review.md",
+        "function_or_field": "Reproducibility result",
+        "record_or_line": "line 66",
+        "problem": "The visual review states the copied test suite passed '48/48', while the current suite and tests_summary.json report 51/51. The visual review predates three added regression tests (nonempty changed positions, unsupported-factual-truth tamper, presort order independence); the count was accurate when written but is stale relative to the current release.",
+        "concrete_evidence_or_counterexample": "visual_review.md line 66: 'copied test suite 48/48 passed' vs reports/tests_summary.json lines 1-8: 'tests_run': 51, 'passed': 51, and portable_reproduction.json tests_stdout listing 51 tests OK.",
+        "severity": "minor",
+        "repair_or_test": "Re-run the visual-review reproduction paragraph after the final test additions and update 48/48 to the current count, or timestamp the sentence to the release revision it describes."
+      },
+      "original_category": "minor_findings",
+      "classification": "editorial_or_explicit_limitation",
+      "decision": "retained_optional_or_resolved",
+      "evidence": "No failing implementation counterexample; preserve raw feedback and scope limitation."
+    },
+    {
+      "id": "R2-B-minor_findings-2",
+      "finding": {
+        "file": "run_task1.py",
+        "function_or_field": "run / output filename",
+        "record_or_line": "line 81",
+        "problem": "Retained from round 1: a fixed output filename pat_kg_poisoned_10pct.json is written regardless of --injection-ratio, so a non-default ratio produces a misleadingly named artifact. README line 17 discloses this and the manifest records the actual ratio, so it remains a mild editorial risk, not a factual-integrity defect.",
+        "concrete_evidence_or_counterexample": "run_task1.py line 81 writes 'pat_kg_poisoned_10pct.json' unconditionally; the only ratio guard is documentation in README and injection_manifest.json 'configuration.injection_ratio'.",
+        "severity": "minor",
+        "repair_or_test": "Optionally emit a warning or refuse a non-0.10 ratio under the fixed name; no functional change required for this release."
+      },
+      "original_category": "minor_findings",
+      "classification": "editorial_or_explicit_limitation",
+      "decision": "retained_optional_or_resolved",
+      "evidence": "No failing implementation counterexample; preserve raw feedback and scope limitation."
+    },
+    {
+      "id": "R2-B-minor_findings-3",
+      "finding": {
+        "file": "src/snapshot_visibility.py",
+        "function_or_field": "build_injection_visibility / injected_visible_edges",
+        "record_or_line": "lines 20-21",
+        "problem": "Per-snapshot 'injected_visible_edges' counts edge-snapshot pairs (642+649+609=1900 for 774 unique triples). This is semantically correct and disclosed in README line 45, but the machine-readable key remains ambiguous for automated consumers.",
+        "concrete_evidence_or_counterexample": "structural_support.md lines 32-36 and visual_review.md lines 43-47 show the overlapping counts; the baseline audit's 'distinct_visibility_mismatches': 38 shows the authors track uniqueness separately, so no miscount occurs in-house.",
+        "severity": "minor",
+        "repair_or_test": "Add a schema note or an additional field 'injected_unique_edges_visible_in_snapshot' in a future schema version; backward compatible."
+      },
+      "original_category": "minor_findings",
+      "classification": "editorial_or_explicit_limitation",
+      "decision": "retained_optional_or_resolved",
+      "evidence": "No failing implementation counterexample; preserve raw feedback and scope limitation."
+    },
+    {
+      "id": "R2-C-major_findings-1",
+      "finding": {
+        "file": "src/inject_misinformation.py",
+        "function_or_field": "balanced_sample",
+        "record_or_line": "38-39",
+        "problem": "I previously classified the pre-shuffle deterministic sort as dead code that obscures selection order. The coordinator's cross-examination directs me to use the supplied executable counterexample.",
+        "concrete_evidence_or_counterexample": "reports/revision_audit/sampling_sort_counterexample.json records 'production_sort_makes_input_order_irrelevant': true and 'removing_sort_changes_selection_under_reordered_input': true, with distinct source_id lists before and after removal. Python's Mersenne Twister shuffle output depends on list length and element positions; without the canonical sort, different caller input orders produce different internal list layouts, causing identical seeds to yield different selections. My prior claim was factually incorrect.",
+        "severity": "medium",
+        "repair_or_test": "Retain the sort. Add an inline comment at line 38: '# Canonical sort ensures seed-deterministic selection regardless of caller input order.'"
+      },
+      "original_category": "major_findings",
+      "classification": "editorial_or_explicit_limitation",
+      "decision": "withdrawn_by_reviewer_after_counterexample",
+      "evidence": "Keep sort; inline comment added. No algorithm change."
+    },
+    {
+      "id": "R2-C-minor_findings-1",
+      "finding": {
+        "file": "tools/analyze_structure_v2.py",
+        "function_or_field": "random_baseline",
+        "record_or_line": "167-168",
+        "problem": "Reviewer A hypothesized a two-position baseline mismatch. The coordinator asks whether actual counts resolve this. I verify the resolution against the supplied structural report.",
+        "concrete_evidence_or_counterexample": "reports/revision_audit/structural_support.md line 40 states: 'Actual changed-position counts: {\"source\": 388, \"target\": 386}'. Sum is exactly 774. Zero edges have two changed positions. The ValueError at line 168 ('Baseline supports exactly one changed endpoint') is never triggered for this dataset. All 774 edges enter each of the ten random runs. Reviewer A's concern is fully refuted by concrete evidence.",
+        "severity": "low",
+        "repair_or_test": "No repair required. The explicit count in the report is sufficient."
+      },
+      "original_category": "minor_findings",
+      "classification": "editorial_or_explicit_limitation",
+      "decision": "retained_optional_or_resolved",
+      "evidence": "No failing implementation counterexample; preserve raw feedback and scope limitation."
+    },
+    {
+      "id": "R2-C-minor_findings-2",
+      "finding": {
+        "file": "src/validate_poisoned.py",
+        "function_or_field": "validate_poisoned",
+        "record_or_line": "24-27",
+        "problem": "The ROOT-TRUTH-01 bug allowed fabricated verified_false annotations with unsupported citations. The coordinator asks whether explicit-evidence rederivation rejects this without conflating fake and false.",
+        "concrete_evidence_or_counterexample": "Lines 24-27 construct expected_truth as independent copies, call annotate_factual_verification(original, expected_truth, evidence_cache_path) with no external cache during default validation, then compare edge['factual_verification'] == expected['factual_verification']. Since annotate_factual_verification defaults to 'unresolved' when no independently reviewed evidence matches, any tampered 'verified_false' status fails equality. tests/test_revision_schema.py lines 67-72 explicitly test this rejection path. The value='fake' synthetic label is checked separately at line 58 ('explicit_synthetic_identity'), preventing conflation.",
+        "severity": "low",
+        "repair_or_test": "No repair required. The fix is verified by test_unsupported_factual_truth_tamper_is_rejected."
+      },
+      "original_category": "minor_findings",
+      "classification": "editorial_or_explicit_limitation",
+      "decision": "retained_optional_or_resolved",
+      "evidence": "No failing implementation counterexample; preserve raw feedback and scope limitation."
+    },
+    {
+      "id": "R2-C-minor_findings-3",
+      "finding": {
+        "file": "run_task1.py",
+        "function_or_field": "run",
+        "record_or_line": "62-64",
+        "problem": "I previously reported that source_code_sha256 omitted tools/ and tests/. The coordinator marked this fixed. I verify the current code includes them.",
+        "concrete_evidence_or_counterexample": "Line 62 now reads: source_files=[p for folder in ('src','tests','tools') for p in (ROOT/folder).glob('*.py')]. Line 63 adds run_task1.py, run_tests.py, requirements.txt, config/task1_config.json. outputs/injection_manifest.json lines 162-201 confirm hashes for all 39 files including tests/*, tools/*, and config/*. My prior finding is resolved in the supplied version.",
+        "severity": "low",
+        "repair_or_test": "No further action needed."
+      },
+      "original_category": "minor_findings",
+      "classification": "editorial_or_explicit_limitation",
+      "decision": "retained_optional_or_resolved",
+      "evidence": "No failing implementation counterexample; preserve raw feedback and scope limitation."
+    },
+    {
+      "id": "R2-D-minor_findings-1",
+      "finding": {
+        "file": "reports/revision_audit/visual_review.md",
+        "function_or_field": "Reproducibility result",
+        "record_or_line": "line 65",
+        "problem": "Stale test count in the prose of `visual_review.md` states 'copied test suite 48/48 passed', whereas the regenerated `portable_reproduction.json` (line 67), `tests_summary.json` (line 2), and `FINAL_REPORT_v2.md` (lines 35, 63) reflect the updated 51/51 test suite after adding 3 Round-1 regression tests.",
+        "concrete_evidence_or_counterexample": "`reports/revision_audit/visual_review.md` line 65 reads `copied test suite 48/48 passed with no skips`, while `reports/revision_audit/portable_reproduction.json` line 67 records `Ran 51 tests in 23.071s ... {\"tests_run\": 51, ... \"passed\": 51}`.",
+        "severity": "minor",
+        "repair_or_test": "Update `48/48` to `51/51` in `reports/revision_audit/visual_review.md` line 65 for prose consistency across all audit reports."
+      },
+      "original_category": "minor_findings",
+      "classification": "editorial_or_explicit_limitation",
+      "decision": "fixed_prose_sync",
+      "evidence": "visual_review.md now records51/51, consistent with actual latest full/portable suites."
+    },
+    {
+      "id": "R2-D-minor_findings-2",
+      "finding": {
+        "file": "src/report_statistics.py",
+        "function_or_field": "bar_chart",
+        "record_or_line": "lines 60-73; attached PNG 1 (injected_by_relation.png) and PNG 2 (injected_by_type.png)",
+        "problem": "The relation chart renders raw Wikidata property IDs (`P102` through `P69`) without human-readable labels, and neither SVG embeds an accessible screen-reader table.",
+        "concrete_evidence_or_counterexample": "In attached PNG 1 (`injected_by_relation.png`), the y-axis labels are strictly `P102`, `P108`, ..., `P69`. `reports/revision_audit/visual_review.md` (lines 31-33) explicitly documents this design choice to avoid invented property names and relies on the accompanying JSON statistics for machine-readable table access.",
+        "severity": "minor",
+        "repair_or_test": "Optional editorial enhancement for formal publication: append canonical relation labels from `graph['relations']` alongside property IDs (e.g., `P488 (chairperson)`)."
+      },
+      "original_category": "minor_findings",
+      "classification": "editorial_or_explicit_limitation",
+      "decision": "retained_optional_or_resolved",
+      "evidence": "No failing implementation counterexample; preserve raw feedback and scope limitation."
+    },
+    {
+      "id": "R3-A-minor-1",
+      "finding": {
+        "file": "reports/revision_audit/structural_support.md",
+        "function_or_field": "Bounded interpretation paragraph",
+        "record_or_line": "line 46",
+        "problem": "The final interpretive paragraph reports alternative-path fraction 99.87% vs 92.69% without repeating the synthetic-path dependency caveat in the same paragraph, though the definitions section (line 9) does state paths 'may use other synthetic triples'. The intended clarification is now present in the definitions section but not co-located with the strong numerical contrast.",
+        "concrete_evidence_or_counterexample": "Current structural_support.md definitions section states 'Alternative paths are measured in the completed augmented graph... They may use other synthetic triples.' The interpretive paragraph then reports the numerical gap without an inline qualifier such as 'using the augmented graph'. The metric name in the comparison table remains 'alternative_path_fraction' unqualified.",
+        "severity": "minor",
+        "repair_or_test": "Optional: add 'in the augmented graph' as an inline qualifier on line 46 or rename the JSON key to 'alternative_path_fraction_in_augmented_graph'. Editorial only; no computational defect."
+      },
+      "classification": "resolved_or_optional_editorial",
+      "decision": "retained_nonblocking",
+      "evidence": "All four final verdicts PASS; no blocking/major finding. Caveat present in canonical structural paragraph; A overlooks it while B/C confirm exact sentence. Remaining labels/table accessibility are optional and explicit."
+    },
+    {
+      "id": "R3-A-minor-2",
+      "finding": {
+        "file": "src/inject_misinformation.py",
+        "function_or_field": "balanced_sample pre-shuffle sort",
+        "record_or_line": "line 38-39",
+        "problem": "The prior 'dead code' claim was refuted by an executable counterexample and reviewer C corrected the record. The current delivery includes an added explanatory inline comment on the canonical pre-shuffle sort. No defect remains; this entry documents closure.",
+        "concrete_evidence_or_counterexample": "sampling_sort_counterexample.json: production_sort_makes_input_order_irrelevant=true, removing_sort_changes_selection_under_reordered_input=true. tests/test_revision_schema.test_presort_is_needed_for_input_order_independent_seed passes.",
+        "severity": "minor",
+        "repair_or_test": "None; retain the comment and regression test."
+      },
+      "classification": "resolved_or_optional_editorial",
+      "decision": "retained_nonblocking",
+      "evidence": "All four final verdicts PASS; no blocking/major finding. Caveat present in canonical structural paragraph; A overlooks it while B/C confirm exact sentence. Remaining labels/table accessibility are optional and explicit."
+    },
+    {
+      "id": "R3-B-minor-1",
+      "finding": {
+        "file": "run_task1.py",
+        "function_or_field": "run / output filename",
+        "record_or_line": "line 81",
+        "problem": "Retained, unchanged since round 2 and not addressed in this delta (the delta was documentation/comments only, which is in scope). The fixed output filename pat_kg_poisoned_10pct.json is written regardless of --injection-ratio. README line 17 and manifest configuration.injection_ratio disclose the actual ratio, so no factual-integrity defect; editorial risk only.",
+        "concrete_evidence_or_counterexample": "run_task1.py line 81 writes the fixed name unconditionally; no ratio-conditional guard exists in source.",
+        "severity": "minor",
+        "repair_or_test": "Optional future release: emit a warning or refuse non-0.10 ratio under the fixed name. Not required for this release."
+      },
+      "classification": "resolved_or_optional_editorial",
+      "decision": "retained_nonblocking",
+      "evidence": "All four final verdicts PASS; no blocking/major finding. Caveat present in canonical structural paragraph; A overlooks it while B/C confirm exact sentence. Remaining labels/table accessibility are optional and explicit."
+    },
+    {
+      "id": "R3-B-minor-2",
+      "finding": {
+        "file": "src/snapshot_visibility.py",
+        "function_or_field": "build_injection_visibility / injected_visible_edges key",
+        "record_or_line": "lines 20-21",
+        "problem": "Per-snapshot 'injected_visible_edges' counts edge-snapshot pairs (642+649+609=1900 vs 774 unique). README line 45 and FINAL_REPORT_v2 'Per-snapshot counts overlap and must not be summed' disclose this; the machine-readable key name remains mildly ambiguous for automated consumers.",
+        "concrete_evidence_or_counterexample": "structural_support.md snapshot table shows the three overlapping counts; injection_manifest target_injected_edges=774 unique.",
+        "severity": "minor",
+        "repair_or_test": "Optional future schema version: add 'injected_unique_edges_visible_in_snapshot' sibling field; backward compatible."
+      },
+      "classification": "resolved_or_optional_editorial",
+      "decision": "retained_nonblocking",
+      "evidence": "All four final verdicts PASS; no blocking/major finding. Caveat present in canonical structural paragraph; A overlooks it while B/C confirm exact sentence. Remaining labels/table accessibility are optional and explicit."
+    },
+    {
+      "id": "R3-B-minor-3",
+      "finding": {
+        "file": "tools/analyze_structure_v2.py",
+        "function_or_field": "random_baseline / comparison table key",
+        "record_or_line": "report table row 'alternative_path_fraction'",
+        "problem": "Reviewer A's round-2 editorial concern is now substantially mitigated: structural_support.md bounded-interpretation paragraph explicitly states 'These alternative paths may use other synthetic edges; the measures can reflect collective synthetic-edge concentration and cycles', and the baseline section now says 'The random diagnostic intentionally removes hub-ranked donor selection; it is a role-and-degree-bin-conditional comparison, not an exact null'. The metric key name in the table still lacks an 'augmented_graph' qualifier, but the immediately surrounding text removes realistic misreading risk. Residual naming nit only.",
+        "concrete_evidence_or_counterexample": "structural_support.md 'Scientifically bounded interpretation' paragraph and 'Controlled random comparison' paragraph both carry the caveats inline; no computation or claim changed.",
+        "severity": "minor",
+        "repair_or_test": "None required for this release. Optional: rename table key in a future report format."
+      },
+      "classification": "resolved_or_optional_editorial",
+      "decision": "retained_nonblocking",
+      "evidence": "All four final verdicts PASS; no blocking/major finding. Caveat present in canonical structural paragraph; A overlooks it while B/C confirm exact sentence. Remaining labels/table accessibility are optional and explicit."
+    },
+    {
+      "id": "R3-C-minor-1",
+      "finding": {
+        "file": "tools/analyze_structure_v2.py",
+        "function_or_field": "edge_diagnostics / alternative_path_fraction",
+        "record_or_line": "structural_support.md lines 44-46",
+        "problem": "Reviewer A's round-2 concern that the bounded-interpretation paragraph reports the augmented alternative-path fraction without carrying the synthetic-path dependency caveat has been addressed in the current structural_support.md. The 'Scientifically bounded interpretation' section now explicitly states: 'These alternative paths may use other synthetic edges; the measures can reflect collective synthetic-edge concentration and cycles.' This editorial risk is resolved.",
+        "concrete_evidence_or_counterexample": "CURRENT reports/revision_audit/structural_support.md under '## Scientifically bounded interpretation' contains the sentence 'These alternative paths may use other synthetic edges; the measures can reflect collective synthetic-edge concentration and cycles.' immediately following the 99.87% vs 92.69% comparison.",
+        "severity": "low",
+        "repair_or_test": "No further repair required. The documentation change satisfies the prior recommendation."
+      },
+      "classification": "resolved_or_optional_editorial",
+      "decision": "retained_nonblocking",
+      "evidence": "All four final verdicts PASS; no blocking/major finding. Caveat present in canonical structural paragraph; A overlooks it while B/C confirm exact sentence. Remaining labels/table accessibility are optional and explicit."
+    },
+    {
+      "id": "R3-C-minor-2",
+      "finding": {
+        "file": "reports/revision_audit/visual_review.md",
+        "function_or_field": "Reproducibility result",
+        "record_or_line": "line 65 (under '## Reproducibility result')",
+        "problem": "Reviewers B and D flagged a stale test count of '48/48' in this file. The current supplied text now reads 'copied test suite 51/51 passed with no skips', which matches tests_summary.json and portable_reproduction.json. This finding is resolved.",
+        "concrete_evidence_or_counterexample": "CURRENT reports/revision_audit/visual_review.md final paragraph states 'copied test suite 51/51 passed with no skips'. CURRENT reports/tests_summary.json confirms 'tests_run': 51, 'passed': 51. CURRENT reports/revision_audit/portable_reproduction.json tests_stdout ends with 'Ran 51 tests... OK'.",
+        "severity": "low",
+        "repair_or_test": "Resolved by documentation update. No code change needed."
+      },
+      "classification": "resolved_or_optional_editorial",
+      "decision": "retained_nonblocking",
+      "evidence": "All four final verdicts PASS; no blocking/major finding. Caveat present in canonical structural paragraph; A overlooks it while B/C confirm exact sentence. Remaining labels/table accessibility are optional and explicit."
+    },
+    {
+      "id": "R3-D-minor-1",
+      "finding": {
+        "file": "src/report_statistics.py",
+        "function_or_field": "bar_chart",
+        "record_or_line": "lines 60-73; attached PNG 1 (injected_by_relation.png) and PNG 2 (injected_by_type.png)",
+        "problem": "The relation chart renders raw Wikidata property IDs (`P102` through `P69`) without human-readable labels, and neither SVG embeds an accessible screen-reader data table.",
+        "concrete_evidence_or_counterexample": "In attached PNG 1 (`injected_by_relation.png`), the y-axis labels are strictly `P102`, `P108`, ..., `P69`. `reports/revision_audit/visual_review.md` explicitly documents this design choice to avoid invented property names and relies on the accompanying JSON statistics for machine-readable table access.",
+        "severity": "minor",
+        "repair_or_test": "Optional editorial enhancement for formal publication: append canonical relation labels from `graph['relations']` alongside property IDs (e.g., `P488 (chairperson)`)."
+      },
+      "classification": "resolved_or_optional_editorial",
+      "decision": "retained_nonblocking",
+      "evidence": "All four final verdicts PASS; no blocking/major finding. Caveat present in canonical structural paragraph; A overlooks it while B/C confirm exact sentence. Remaining labels/table accessibility are optional and explicit."
+    },
+    {
+      "id": "R4-A-minor-1",
+      "finding": "The term 'fake' in edge labels remains semantically overloaded despite explicit disclaimers; a consumer reading only the CSV could misread it as verified factual falsity. The metadata and factual_verification column mitigate this.",
+      "classification": "optional_schema_ergonomics",
+      "decision": "retained_nonblocking",
+      "evidence": "User explicitly requests fake construction labels. Binary flags and separate factual status disambiguate them;654incident nodes are not synthetic entities. No supported failing counterexample."
+    },
+    {
+      "id": "R4-A-minor-2",
+      "finding": "Node participation labels count only nodes incident to injected edges (654), which is correct but could be misread as '654 synthetic nodes' by a cursory reader; the all-zero is_synthetic_node column and manifest semantics address this.",
+      "classification": "optional_schema_ergonomics",
+      "decision": "retained_nonblocking",
+      "evidence": "User explicitly requests fake construction labels. Binary flags and separate factual status disambiguate them;654incident nodes are not synthetic entities. No supported failing counterexample."
+    },
+    {
+      "id": "R4-B-minor-1",
+      "finding": "write_training_labels derives synthetic_in/out/total degree from augmented edges via Counter over all injected edges, which is correct only if every edge with edge_origin=='synthetic_injection' is appended after the original prefix. The code currently relies on this positional invariant implicitly; verify_delivery re-derives it independently (all_node_training_labels_align_with_injected_endpoints), so it is verified, but an explicit comment or assertion in export_training_labels.py would harden it against future non-appenditive pipeline changes.",
+      "classification": "optional_schema_ergonomics",
+      "decision": "retained_nonblocking",
+      "evidence": "User explicitly requests fake construction labels. Binary flags and separate factual status disambiguate them;654incident nodes are not synthetic entities. No supported failing counterexample."
+    },
+    {
+      "id": "R4-B-minor-2",
+      "finding": "The node CSV omits a node label/name column (only qid, entity_type and label flags). Training consumers may need human-readable labels; hub_nodes.csv has them, but the canonical training-label table does not. Cosmetic, non-blocking.",
+      "classification": "optional_schema_ergonomics",
+      "decision": "retained_nonblocking",
+      "evidence": "User explicitly requests fake construction labels. Binary flags and separate factual status disambiguate them;654incident nodes are not synthetic entities. No supported failing counterexample."
+    },
+    {
+      "id": "R4-B-minor-3",
+      "finding": "factual_verification_status is written as 'not_adjudicated' for original edges in the CSV while injected edges use 'unresolved'; this asymmetry is intentional (originals never adjudicated) but is not documented in a field-level data dictionary beyond the manifest label_tables text.",
+      "classification": "optional_schema_ergonomics",
+      "decision": "retained_nonblocking",
+      "evidence": "User explicitly requests fake construction labels. Binary flags and separate factual status disambiguate them;654incident nodes are not synthetic entities. No supported failing counterexample."
+    },
+    {
+      "id": "R4-B-minor-4",
+      "finding": "manifest['training_labels'] is attached after augment_graph builds poisoned metadata; the training-label counts thus live in the manifest only, not in the augmented graph metadata itself. This is consistent with additive design but splits label metadata across two artifacts.",
+      "classification": "optional_schema_ergonomics",
+      "decision": "retained_nonblocking",
+      "evidence": "User explicitly requests fake construction labels. Binary flags and separate factual status disambiguate them;654incident nodes are not synthetic entities. No supported failing counterexample."
+    },
+    {
+      "id": "R4-C-minor-1",
+      "finding": "verify_delivery.py references an absolute Windows path (E:/DevSpaceProjects/.opencode-local/api_key.txt) for credential scanning, which will silently skip on non-Windows systems or different workspaces. Consider making this configurable or relative to the project root.",
+      "classification": "optional_schema_ergonomics",
+      "decision": "retained_nonblocking",
+      "evidence": "User explicitly requests fake construction labels. Binary flags and separate factual status disambiguate them;654incident nodes are not synthetic entities. No supported failing counterexample."
+    },
+    {
+      "id": "R4-C-minor-2",
+      "finding": "The synthetic_class column in edge_injection_labels.csv uses the string 'fake' to denote construction origin. While metadata and docstrings clearly separate this from factual falsity, downstream consumers parsing CSVs without reading documentation might conflate the two. A value like 'synthetic_injected' could reduce ambiguity, though current semantics are internally consistent.",
+      "classification": "optional_schema_ergonomics",
+      "decision": "retained_nonblocking",
+      "evidence": "User explicitly requests fake construction labels. Binary flags and separate factual status disambiguate them;654incident nodes are not synthetic entities. No supported failing counterexample."
+    },
+    {
+      "id": "R4-D-minor-1",
+      "finding": {
+        "id": "MIN-R4-01",
+        "category": "schema_ergonomics",
+        "description": "In `edge_injection_labels.csv`, `synthetic_class` ('fake' vs 'original') is a 1:1 redundant encoding of `is_synthetic_edge` (1 vs 0). However, it aligns with `edge['value'] == 'fake'` in the JSON graph and is explicitly documented as a construction label rather than verified falsity, so it poses no semantic conflict."
+      },
+      "classification": "optional_schema_ergonomics",
+      "decision": "retained_nonblocking",
+      "evidence": "User explicitly requests fake construction labels. Binary flags and separate factual status disambiguate them;654incident nodes are not synthetic entities. No supported failing counterexample."
+    }
+  ],
+  "known_supported_unfixed_blocking_or_major_issues": [],
+  "cross_examination_questions": [
+    "Is pre-shuffle sort necessary for caller-order independence? Use supplied executable counterexample.",
+    "Do actual388/386/0counts resolve the two-position baseline concern?",
+    "Does explicit-evidence rederivation reject unsupported verified truth without conflating fake and false?",
+    "Are output/input/source hashes and portable evidence consistent after coverage extension?",
+    "Does independent snapshot adapter resolve all visible endpoints while retaining original observations?",
+    "Identify any real failing counterexample rather than requiring a new global-permutation or downstream-efficacy experiment."
+  ]
+}

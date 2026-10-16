@@ -1,0 +1,19 @@
+{
+  "archive": "D:\\\u5b66\u4e60\\KBS_project\\new_KG\\releases\\task1_v2_portable_20261016.zip",
+  "sha256": "eb59000c637f1e65f8c83212a73e57f1b62d87180a825c4aaa0e3887f34d9987",
+  "files": 190,
+  "required_inputs": [
+    {
+      "argument": "--graph",
+      "filename": "pat_kg_merged.json",
+      "bytes": 40683218,
+      "sha256": "f5a1c2f4b556bf060e89540ab1b5c05f836afe29cc0f13cdcd80f92120171f31"
+    },
+    {
+      "argument": "--entities",
+      "filename": "entity_id_value_type.csv",
+      "bytes": 702640,
+      "sha256": "c653dde9d87f61295dac67aac1151d5510c7d6b9c0081ada82b31ea1f053be2e"
+    }
+  ]
+}

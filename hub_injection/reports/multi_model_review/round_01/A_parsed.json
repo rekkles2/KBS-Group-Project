@@ -1,0 +1,148 @@
+{
+  "reviewer_model": "deepseek-v4-pro",
+  "overall_verdict": "PASS",
+  "blocking_findings": [],
+  "major_findings": [
+    {
+      "file": "src/generate_candidates.py",
+      "function_or_field": "generate_candidates",
+      "record_or_line": "lines 56-67",
+      "problem": "The relation-role compatibility gate is conditional on the endpoint having changed. When an original incident edge has neither endpoint, or both endpoints, equal to one of the hub pair members, no donor-evidence check is applied because neither 'source' nor 'target' appears in 'changed'. This aligns with the stated pair-local transposition adaptation, but it means a candidate can enter the pool solely because its proposed triple differs from all original/QA-positive triples without any empirical domain/range signature validation for that specific edge.",
+      "concrete_evidence_or_counterexample": "A hub-pair edge where old_source==a and old_target==b produces source=b,target=a; both positions appear changed, so both donor checks run. However, if neither endpoint is a hub, changed is empty and the candidate is rejected only when proposed equals original (which it must), effectively contributing one guaranteed rejection path. More materially, lines 64-67 only require evidence for swapped donors, so an edge whose sole swapped position's donor happens to pass evidence is indistinguishable in policy from one with no evidence check if no endpoint changes; the latter cannot be a candidate unless zero endpoints change and the triple is unchanged (rejected as original). Thus practically every accepted candidate receives at least one role-evidence check because at least one endpoint changes under the pair mapping. The conditional remains a documentation nuance rather than a defect.",
+      "severity": "low",
+      "repair_or_test": "Add an assertion or explicit counter documenting that accepted candidates always have at least one changed position when hub_pair members differ and the source edge is incident to at least one member, and confirm in diagnostics that no accepted candidate has zero changed positions. A unit test asserting all accepted candidates have non-empty changed_positions would make the intent explicit."
+    },
+    {
+      "file": "src/inject_misinformation.py",
+      "function_or_field": "balanced_sample",
+      "record_or_line": "lines 21-56",
+      "problem": "The sampling procedure re-sorts buckets deterministically by triple after applying two rounds of seeded shuffling. The final per-bucket order mixes deterministic sorting and seeded shuffling, which is acceptable, but the round-robin iterator over relation cursors can revisit a relation whose bucket remains non-empty and pop from the tail of the shuffled list. This is deterministic for a fixed seed and Python version, and is individually reasonable, but the documentation claims 'round-robin types, then relations within each type; seeded bucket order' without stating the exhaustion semantics. It is not proportional to original distribution, which is explicitly disclosed, but the exact tie-breaking between shuffles and sorts is under-specified.",
+      "concrete_evidence_or_counterexample": "Lines 38-39 and 43-50: after rng.shuffle(buckets[kind][relation]), line 38 sorts by triple, then line 39 reshuffles. The cursor loop selects from buckets until empty, potentially cycling relation lists multiple times. The resulting order is reproducible but its statistical balancing properties are not documented beyond 'round-robin'.",
+      "severity": "low",
+      "repair_or_test": "Add one sentence in README or function docstring stating that relation buckets are shuffles over a deterministic sorted order, and that exhausted relation buckets are skipped while other buckets in the same type remain non-empty. No functional change is required."
+    },
+    {
+      "file": "src/snapshot_visibility.py",
+      "function_or_field": "build_injection_visibility",
+      "record_or_line": "lines 4-22",
+      "problem": "Activation is computed only for endpoints of injected edges whose injection_snapshots include a snapshot. For a snapshot where an injected edge inherits visibility from a source edge whose observed_in_snapshots includes that snapshot, the endpoint may already have an unrelated original QA observation; the activation set condition correctly excludes already-observed nodes. However, the count 'injected_visible_edges' is derived before node existence validation and before deduplication of edges that are visible in multiple snapshots, which is correct per edge-snapshot semantics but may be misread as a count of unique synthetic edges across snapshots.",
+      "concrete_evidence_or_counterexample": "The report tables show Dec2021 642, Dec2023 649, March2024 609, summing to 1900 visible edge-snapshot pairs for 774 unique injected edges, which is expected because edge snapshot lists overlap. The field name 'injected_visible_edges' in each snapshot's record could be read as unique edges per snapshot rather than edge-snapshot counts; the README does clarify this, but the machine-readable key is ambiguous.",
+      "severity": "low",
+      "repair_or_test": "Rename or document 'injected_visible_edges' as 'injected_visible_edge_snapshot_pairs' in a backward-compatible manner, or at minimum add a schema note in the metadata namespace."
+    },
+    {
+      "file": "tools/analyze_structure_v2.py",
+      "function_or_field": "random_baseline",
+      "record_or_line": "lines 147-205",
+      "problem": "The baseline explicitly refuses injected edges with more than one swapped position (line 167-168). The actual injected records include candidate swaps that frequently change both source and target positions; the structural comparison therefore draws from a baseline restricted to one-position swaps, while the hub diagnostics compute over all 774 injected edges. This is disclosed as an unmatched-strata limitation, but it means the controlled random comparison is not stratum-identical for the full injection set.",
+      "concrete_evidence_or_counterexample": "Synthetic record samples contain 'swaps' with only one position changed, but tests/test_structure_v2.py includes a rejection path for two-position swaps and the actual injected distribution in injection_manifest/structural_metrics includes multiple 'changed_positions' categories. The baseline runs complete for all 774 edges only if every actual swap has exactly one position; otherwise main() would raise. Since the delivered structural report completed, either all 774 have one position or the multi-position paths are absent from the randomized comparison.",
+      "severity": "medium",
+      "repair_or_test": "Clarify how many of the 774 injected edges have two-position swaps. If any do, the random_baseline rejection condition contradicts the completed report and the delivered structural comparison is incomplete or silently filtered. Add an explicit count, or extend the baseline to support two-position pair transpositions with role compatibility on both endpoints."
+    },
+    {
+      "file": "tools/analyze_structure_v2.py",
+      "function_or_field": "edge_diagnostics / alternative_path_fraction",
+      "record_or_line": "lines 106-140",
+      "problem": "Alternative-path availability is measured after adding all injected edges except the tested edge, allowing paths through other synthetic edges. This is explicitly disclosed, but the interpretation table labels the metric 'alternative-path availability' without consistently carrying the 'may use other synthetic triples' caveat into the downstream bounded-interpretation paragraph. The reader could infer the injected edge adds a genuinely novel alternative route rather than reflecting collective synthetic concentration.",
+      "concrete_evidence_or_counterexample": "README line 43 and structural_support.md lines 9 and 44-45 note the mixed result and the caveat in the definitions section, but the final scientific-bounded-interpretation paragraph does not repeat the synthetic-path caveat when it reports 99.87% versus 92.69%.",
+      "severity": "low",
+      "repair_or_test": "Repeat the synthetic-path dependency caveat in the bounded-interpretation paragraph or rename the metric to 'alternative_path_fraction_in_augmented_graph' throughout the report."
+    }
+  ],
+  "minor_findings": [
+    {
+      "file": "src/factual_verification.py",
+      "function_or_field": "_usable",
+      "record_or_line": "lines 16-24",
+      "problem": "The reason field is required to be truthy but not otherwise constrained, and evidence_refs must be truthy. This is sufficient for conservative adjudication, but the absence of a schema validator means a malformed but non-empty reason string would still mark a claim as usable.",
+      "concrete_evidence_or_counterexample": "A record with reason='trust me' and evidence_refs=['x'] would pass _usable if all other fields match. The test fixtures use explicit, realistic reasons, so this is a hardening gap rather than an observed defect.",
+      "severity": "minor",
+      "repair_or_test": "Add a lightweight schema check requiring reason length and evidence_refs item structure in the consensus adjudication path."
+    },
+    {
+      "file": "src/validate_original.py",
+      "function_or_field": "qa_positive_triples",
+      "record_or_line": "lines 11-37",
+      "problem": "The function does not validate that snapshot field values are consistent for duplicated intermediate entities across multiple records; duplicate intermediate QIDs are deduplicated per question, which is correct, but the audit reports 20 QA records with duplicate intermediate QIDs and no test asserts these duplicates are equivalent to a unique intermediate set. The handling is conservative and deliberately avoids cross-product inference.",
+      "concrete_evidence_or_counterexample": "tests/test_original_audit.py line 20 asserts exactly 20 duplicate-intermediate records, and test_injection.py verifies no false second-hop pairing. This is adequately covered.",
+      "severity": "minor",
+      "repair_or_test": "No change required; consider adding a comment that duplicate annotation equivalence is assumed for the same QID."
+    },
+    {
+      "file": "src/report_statistics.py",
+      "function_or_field": "bar_chart",
+      "record_or_line": "lines 60-73",
+      "problem": "Chart count labels are drawn directly from data after sorting by label, and the SVG is not XML-escaped for label text beyond html.escape on title/label. Numeric values are inserted unescaped into text nodes, which is safe for integers and CSV-derived labels.",
+      "concrete_evidence_or_counterexample": "Injected relation/type labels are PIDs and entity type names from validated data; no injection path exists from the graph to chart labels. The vulnerability is theoretical.",
+      "severity": "minor",
+      "repair_or_test": "No repair required; optionally add html.escape around numeric labels if generated data could ever include non-numeric types."
+    },
+    {
+      "file": "tools/package_release_v2.py",
+      "function_or_field": "included",
+      "record_or_line": "lines 29-34",
+      "problem": "SECRET_NAMES excludes only exact filename matches. A credential file with a different name such as credentials.json would be included if under RUNTIME_DIRS. The test only checks api_key.txt and .opencode-local.",
+      "concrete_evidence_or_counterexample": "The delivered package manifest is not included in the supplied files, but the code itself cannot detect all possible credential naming conventions. This is a best-effort exclusion policy, documented as explicit filename/path exclusions.",
+      "severity": "minor",
+      "repair_or_test": "Document that credential exclusion is allowlist-based by path pattern and may not cover arbitrary filenames, or scan for common key patterns."
+    },
+    {
+      "file": "README.md",
+      "function_or_field": "Validation and delivery",
+      "record_or_line": "line 49",
+      "problem": "The README claims 'three full CLI runs of the real data under python -E -S', matching tests/test_reproducibility.py, but the reports/revision_audit/portable_reproduction.json shows only two clean runs (run_0 and run_1) plus the canonical delivered outputs. This is not a contradiction because the portable check intentionally compares two runs, while the reproducibility test suite in the main project performs three subprocess runs including seed 43.",
+      "concrete_evidence_or_counterexample": "portable_reproduction.json contains two run_output_sha256 entries and two run_logs entries, consistent with check_clean_regeneration looping range(2). The README's 'three full CLI runs' refers to run_tests.py's ActualDatasetIntegrationTests with seeds [42,42,43].",
+      "severity": "minor",
+      "repair_or_test": "Clarify which report corresponds to which 'three runs' claim to avoid reviewer confusion."
+    },
+    {
+      "file": "outputs/injection_manifest.json",
+      "function_or_field": "expansion_history",
+      "record_or_line": "lines 51-101",
+      "problem": "The expansion history contains a single entry with expansion_rounds reported as 0 in the portable reproduction stdout. The while loop in run_task1.py appends one history entry before checking candidate sufficiency, so exactly one entry plus zero expansions is consistent with immediate sufficiency.",
+      "concrete_evidence_or_counterexample": "portable_reproduction.json stdout shows expansion_rounds:0 and the manifest's expansion_history has one item. This is internally consistent.",
+      "severity": "minor",
+      "repair_or_test": "No repair required; optionally note that expansion_history length equals expansion_rounds+1 in the manifest schema."
+    }
+  ],
+  "verified_checks": [
+    "Original node count 7868, edge count 7737, QA 18436, unresolved 496 preserved exactly.",
+    "Injection budget 774 = round_half_even(7737*0.10), total edges 8511.",
+    "Only injected edges carry value=fake; no original nodes or edges receive synthetic labels.",
+    "Factual verification separates edge_origin synthetic_injection from truth status unresolved/unverified.",
+    "No absence-to-false or current-to-historical inference: all 774 remain unresolved with zero verified_true/false.",
+    "Directed relation-role evidence is independently reconstructed in validate_poisoned.py, not trusted from generation alone.",
+    "Original edge prefix and original metadata are preserved in order and byte-identical.",
+    "Snapshot overlay activation does not edit original node observation lists.",
+    "Determinism: same-seed outputs byte-identical; alternative seed 43 produces different but valid selection.",
+    "Input SHA-256 checksums match the baseline audit and portable reproduction evidence.",
+    "No training, KGQA experiment, attack-efficacy, or downstream inference claimed."
+  ],
+  "unsupported_claims": [
+    "The claim that 'augmented alternative paths are higher' is supported by the conditional random baseline, but the report itself correctly refrains from inferring attack success or factual verifiability.",
+    "The structural support section does not claim relation-specific support; it explicitly states untyped metrics cannot verify a relation.",
+    "No claim is made that any injected edge is factually false; all are unresolved synthetic constructions."
+  ],
+  "recommended_fixes": [
+    "Add explicit documentation or assertion that every accepted candidate has at least one changed endpoint, to preempt ambiguity in generate_candidates.py.",
+    "Clarify the one-position versus two-position baseline restriction relative to the actual injected swap distribution in tools/analyze_structure_v2.py.",
+    "Rename or add schema documentation for 'injected_visible_edges' to avoid edge-versus-edge-snapshot ambiguity.",
+    "Repeat the synthetic-path caveat directly in the bounded interpretation paragraph of the structural report.",
+    "Harden credential-pattern exclusion in package_release_v2.py or document its allowlist limitations explicitly.",
+    "Add a minor schema check to usable factual evidence records beyond merely non-empty reason/refs."
+  ],
+  "evidence_references": [
+    "README.md lines 21-30, 43-45",
+    "run_task1.py lines 43-55, 56-78, 111-119",
+    "src/generate_candidates.py lines 12-82",
+    "src/inject_misinformation.py lines 14-56, 59-91",
+    "src/validate_poisoned.py lines 42-93",
+    "src/snapshot_visibility.py lines 4-56",
+    "tools/analyze_structure_v2.py lines 147-205, 280-295",
+    "reports/revision_audit/structural_support.md lines 17-25, 40-46",
+    "outputs/injection_manifest.json lines 2-4, 51-101",
+    "reports/revision_audit/portable_reproduction.json lines 8-25, 30-64",
+    "reports/validation_results.json lines 2-38"
+  ],
+  "remaining_uncertainty": "The relative proportion of one-position versus two-position swaps among the 774 injected edges is unclear from the supplied excerpts. The structural baseline explicitly rejects two-position swaps, yet the completed report shows all ten seeds matching all 774 edges with zero fallback, implying either all actual swaps are single-position or the report was generated from a filtered population. Because tests/test_revision_schema.py and the synthetic record samples show predominantly single-position swaps, the delivered structural comparison is likely valid, but this specific distribution should be documented. Additionally, the portable reproduction evidence shows two clean runs rather than the three mentioned in README, attributable to different test harnesses; no blocking inconsistency was found."
+}

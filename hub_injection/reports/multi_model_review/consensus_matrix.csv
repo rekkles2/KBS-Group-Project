@@ -1,0 +1,5 @@
+role,actual_model,final_verdict,original_preservation,synthetic_edge_labels,node_identity_labels,node_participation_labels,snapshot_overlay,factual_honesty,method_scope,blocking,supported_major,images_received,last_round
+A,deepseek-v4-pro,PASS,PASS supplied+local evidence,PASS774,PASS all0,PASS654,PASS,PASS unresolved,PASS pair-local additive,NONE,NONE,0,4
+B,glm-5.3,PASS,PASS supplied+local evidence,PASS774,PASS all0,PASS654,PASS,PASS unresolved,PASS pair-local additive,NONE,NONE,0,4
+C,qwen3.8-max,PASS,PASS supplied+local evidence,PASS774,PASS all0,PASS654,PASS,PASS unresolved,PASS pair-local additive,NONE,NONE,0,4
+D,gemini-4-argon-contributor,PASS,PASS supplied+local evidence,PASS774,PASS all0,PASS654,PASS,PASS unresolved,PASS pair-local additive,NONE,NONE,2,4

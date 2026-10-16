@@ -1,0 +1,11 @@
+{
+  "ok": false,
+  "model": "qwen3.8-max",
+  "session_id": "kbs-task1-v2-r1-C",
+  "thinking_requested": "auto",
+  "started_at": "2026-10-16T01:42:28.541915+00:00",
+  "prompt_sha256": "d81c6f16ccba547eb3496cf576c7622dec4ce16b853808bd474f9e7a75dff58b",
+  "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+  "error": "TimeoutError: The read operation timed out",
+  "elapsed_seconds": 300.359
+}

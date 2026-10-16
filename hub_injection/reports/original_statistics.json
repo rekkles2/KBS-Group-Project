@@ -1,0 +1,191 @@
+{
+  "audit": {
+    "checks": {
+      "all_node_csv_types_eligibility_flags_consistent": true,
+      "csv_node_coverage": true,
+      "csv_unique_qids": true,
+      "known_snapshot_ids": true,
+      "metadata_node_snapshot_semantics": true,
+      "metadata_pairing_policy": true,
+      "metadata_projection_semantics": true,
+      "metadata_snapshot_semantics": true,
+      "original_endpoints_relations_evidence_snapshots_valid": true,
+      "qa_snapshot_ids": true,
+      "unique_original_triples": true,
+      "unique_qa_ids": true,
+      "unique_qids": true,
+      "unique_relations": true,
+      "unresolved_qa_references": true,
+      "valid_qids": true,
+      "valid_relations": true
+    },
+    "counts": {
+      "edges": 7737,
+      "nodes": 7868,
+      "questions": 18436,
+      "relations": 20,
+      "unresolved_paths": 496
+    },
+    "discrepancies": {},
+    "expected_counts": {
+      "edges": 7737,
+      "nodes": 7868,
+      "questions": 18436,
+      "relations": 20,
+      "unresolved_paths": 496
+    },
+    "flag_counts": {
+      "education_entity_identity_unverified": 2,
+      "education_level_unverified": 11,
+      "insufficient_type_evidence": 2,
+      "role_based_interpretation_unverified": 2,
+      "source_label_mismatch": 1,
+      "source_qid_mismatch": 1
+    },
+    "qa_positive_triples": 7738,
+    "qa_records_with_duplicate_intermediate_qids": 20
+  },
+  "degree_distribution": {
+    "in_degree": {
+      "count": 7868,
+      "max": 32,
+      "mean": 0.9833502796136248,
+      "min": 0,
+      "p50": 1,
+      "p90": 2,
+      "p99": 4
+    },
+    "out_degree": {
+      "count": 7868,
+      "max": 22,
+      "mean": 0.9833502796136248,
+      "min": 0,
+      "p50": 0,
+      "p90": 3,
+      "p99": 5
+    },
+    "total_degree": {
+      "count": 7868,
+      "max": 34,
+      "mean": 1.9667005592272495,
+      "min": 0,
+      "p50": 2,
+      "p90": 4,
+      "p99": 7
+    }
+  },
+  "edge_snapshot_combinations": {
+    "Dec2021": 800,
+    "Dec2021|Dec2023": 442,
+    "Dec2021|Dec2023|March2024": 5162,
+    "Dec2021|March2024": 7,
+    "Dec2023": 93,
+    "Dec2023|March2024": 895,
+    "March2024": 338
+  },
+  "edges": 7737,
+  "edges_by_snapshot": {
+    "Dec2021": 6411,
+    "Dec2023": 6592,
+    "March2024": 6402
+  },
+  "entity_type_distribution": {
+    "AdministrativeArea": 342,
+    "Brand": 2,
+    "Building": 29,
+    "CentralBank": 6,
+    "CityTown": 596,
+    "Company": 145,
+    "Concept": 2,
+    "Country": 73,
+    "CreativeWork": 4,
+    "CulturalInstitution": 14,
+    "CulturalOrganization": 5,
+    "EducationalInstitution": 91,
+    "Event": 1,
+    "Facility": 8,
+    "Family": 1,
+    "GeographicLocation": 2,
+    "GovernmentOrganization": 83,
+    "HigherEducationInstitution": 104,
+    "MediaOrganization": 50,
+    "Occupation": 1,
+    "Organization": 123,
+    "Person": 3810,
+    "PoliticalParty": 167,
+    "Position": 227,
+    "ReligiousOrganization": 5,
+    "ResearchInstitution": 34,
+    "Road": 2,
+    "School": 166,
+    "ScientificInstrument": 1,
+    "SportsOrganization": 45,
+    "SportsTeam": 807,
+    "SportsVenue": 407,
+    "University": 511,
+    "Unknown": 3,
+    "Vehicle": 1
+  },
+  "input_sha256": {
+    "entity_csv": "c653dde9d87f61295dac67aac1151d5510c7d6b9c0081ada82b31ea1f053be2e",
+    "graph": "f5a1c2f4b556bf060e89540ab1b5c05f836afe29cc0f13cdcd80f92120171f31"
+  },
+  "isolated_nodes": 203,
+  "nodes": 7868,
+  "nodes_by_snapshot": {
+    "Dec2021": 6778,
+    "Dec2023": 6966,
+    "March2024": 7086
+  },
+  "qa_by_snapshot": {
+    "Dec2021": 6102,
+    "Dec2023": 6172,
+    "March2024": 6162
+  },
+  "qa_records": 18436,
+  "relation_distribution": {
+    "P102": 193,
+    "P1037": 3,
+    "P108": 340,
+    "P112": 219,
+    "P115": 347,
+    "P127": 246,
+    "P1365": 695,
+    "P159": 245,
+    "P169": 21,
+    "P17": 6,
+    "P19": 658,
+    "P26": 150,
+    "P27": 125,
+    "P286": 1178,
+    "P35": 53,
+    "P39": 336,
+    "P488": 665,
+    "P54": 663,
+    "P6": 610,
+    "P69": 984
+  },
+  "relations": 20,
+  "self_loops": 3,
+  "total_degree_histogram": {
+    "0": 203,
+    "1": 3469,
+    "2": 2325,
+    "3": 1035,
+    "4": 452,
+    "5": 190,
+    "6": 85,
+    "7": 45,
+    "8": 25,
+    "9": 15,
+    "10": 7,
+    "11": 4,
+    "12": 6,
+    "16": 2,
+    "17": 1,
+    "19": 1,
+    "22": 2,
+    "34": 1
+  },
+  "unresolved_paths": 496
+}

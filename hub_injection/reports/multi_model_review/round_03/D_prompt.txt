@@ -1,0 +1,886 @@
+You are reviewer D model gemini-4-argon-contributor.
+Final focused adversarial closure (round3 of at most5), not an initial independent round. Do not force agreement. The prior full-code round2 responses from all four models are supplied. Only documentation clarifications and one explanatory inline comment changed since then; no algorithm/schema/config change. Actual final full suite and isolated-copy regeneration were rerun after those source changes. Assess whether any supported blocking or major implementation defect remains. Retain external factual uncertainty (774unresolved,86/774currentlookups) rather than vote on truth. Changes: canonical structural report now explicitly says other synthetic edges may form alternative paths and states the random baseline intentionally removes hub ranking; visual report synced48/48->51/51; pre-shuffle sort comment explains caller-order invariance. Return JSON keys reviewer_model,overall_verdict(PASS/FAIL),blocking_findings,major_findings,minor_findings,verified_checks,unsupported_claims,recommended_fixes,evidence_references,remaining_uncertainty. Findings require concrete failing test/source evidence; do not reclassify previously resolved comments as open bugs. Text-only reviewers cannot claim own local execution or image inspection. Gemini actually receives both after PNGs. Be concise under1200words.
+PRIOR FULL-CODE REVIEW A_parsed.json
+{
+  "reviewer_model": "deepseek-v4-pro",
+  "overall_verdict": "PASS",
+  "blocking_findings": [],
+  "major_findings": [
+    {
+      "file": "tools/analyze_structure_v2.py",
+      "function_or_field": "edge_diagnostics / alternative_path_fraction",
+      "record_or_line": "lines 106-140; report lines 44-46",
+      "problem": "The bounded-interpretation paragraph reports the augmented alternative-path fraction (99.87% vs 92.69% random mean) without carrying the synthetic-path dependency caveat into that same paragraph. The definitions section does state paths may use other synthetic triples, but a reader of the final interpretive paragraph could still infer that each injected edge independently creates a novel alternative route, rather than reflecting collective synthetic-edge concentration.",
+      "concrete_evidence_or_counterexample": "structural_support.md line 9 explicitly states alternative paths 'may use other synthetic triples', but line 46 says only 'After augmentation, alternative-path availability is 99.87% versus random mean 92.69%' without repeating that dependency. The metric name 'alternative_path_fraction' in the comparison table likewise lacks the 'augmented graph' qualifier visible to the reader of that table.",
+      "severity": "medium",
+      "repair_or_test": "Already flagged in prior round and preserved. The delivered report remains internally honest in the definitions section, but the proximity of the unqualified metric name to the strong numerical difference makes this a genuine editorial risk for downstream inference. Recommend renaming the comparison key to 'alternative_path_fraction_in_augmented_graph' or adding one parenthetical caveat sentence at line 46. No factual or methodological defect in the computation itself."
+    },
+    {
+      "file": "tools/analyze_structure_v2.py",
+      "function_or_field": "random_baseline",
+      "record_or_line": "lines 164-178; structural_support.md lines 40-41",
+      "problem": "The baseline intentionally does not control the donor's own relation-role evidence as rigorously as the production candidate generator. Production `generate_candidates` requires, for each changed position, that the donor possess original directed evidence for the exact relation and counterpart general type. The baseline pools donors from the global role signature `(position, relation, counterpart general type)`, which is the same property, but it does not ensure the donated endpoint belongs to a selected hub pair with an original incident edge, nor does it preserve the source-edge derivation constraint in the same way. This is a disclosed conditional baseline, but the small endpoint-degree gap (4.58204 vs 4.40795) is interpreted cautiously, which is appropriate; nevertheless, the baseline is not a precise null for the candidate-generation mechanism.",
+      "concrete_evidence_or_counterexample": "random_baseline derives `pool` only from role[(position, base relation, counterpart general type)] and eligibility, then shuffles. It does not require the donor to have been selected as a hub under total_degree ranking, nor that the donor has an incident edge with the source counterpart, unlike production candidate enumeration over selected hub pairs and original incident edges. The report calls this a conditional descriptive comparison and warns it is not causal, so this is an honest limitation, but the phrasing 'controlled random comparison' may still overstate the degree of mechanism matching.",
+      "severity": "medium",
+      "repair_or_test": "Optional hardening: extend `random_baseline` to optionally restrict donors to selected hubs for a second variant, or explicitly label the current baseline as 'role-and-degree-bin-conditional, not hub-ranked/incident-edge null'. The report already cautions against fairness claims, so this is a documentation nuance, not a blocking defect."
+    },
+    {
+      "file": "src/generate_candidates.py",
+      "function_or_field": "generate_candidates",
+      "record_or_line": "lines 56-67",
+      "problem": "The conditional relation-role gate application is structurally sound in the supplied version because every accepted candidate has at least one changed position, and the corresponding donor-evidence check is executed for each changed position. The prior concern about an evidence-free candidate only holds when `changed` is empty, which implies `proposed` equals the original triple and is therefore rejected as `original_triple`. No accepted candidate can bypass role evidence.",
+      "concrete_evidence_or_counterexample": "tests/test_revision_schema.test_every_accepted_candidate_has_a_changed_position passes, and the candidate diagnostics show zero accepted candidates with empty changed_positions. The explicit non-empty assertion is now present in the test suite.",
+      "severity": "low",
+      "repair_or_test": "Resolved in the revised delivery. Keep the regression test for non-empty changed_positions."
+    },
+    {
+      "file": "src/inject_misinformation.py",
+      "function_or_field": "balanced_sample",
+      "record_or_line": "lines 38-39",
+      "problem": "Sorting by triple before seeded shuffle is not dead code: it establishes deterministic pre-shuffle input order so that the same seed produces identical selection even when the caller passes a reordered candidate list. The previous finding incorrectly treated the sort as redundant. The sampling_sort_counterexample.json demonstrates caller-order dependence if the sort is removed. However, the bucket-skip semantics when a type has exhausted relations while other types still have candidates remains non-obvious from the function alone, though README line 45 now documents it.",
+      "concrete_evidence_or_counterexample": "reports/revision_audit/sampling_sort_counterexample.json has production_sort_makes_input_order_irrelevant=true and removing_sort_changes_selection_under_reordered_input=true. The delivered README now states 'exhausted buckets are skipped while remaining buckets are sampled'.",
+      "severity": "low",
+      "repair_or_test": "Resolved in the revised delivery. The delivered documentation covers the exhaustion semantics."
+    }
+  ],
+  "minor_findings": [
+    {
+      "file": "src/factual_verification.py",
+      "function_or_field": "_usable",
+      "record_or_line": "lines 16-24",
+      "problem": "The consensus evidence record requires independently_reviewed, direct_claim_evidence, scope_matches_claim, and nonempty evidence_refs/temporal_scope/reason, but there is no structural validation of evidence_refs items or reason content. This is a hardening gap, not an observed defect, because all current test records are realistic and the pipeline never auto-adjudicates from raw data.",
+      "concrete_evidence_or_counterexample": "A fabricated record with reason='trust me' and evidence_refs=['x'] would satisfy _usable if other fields match. This is an externally supplied evidence cache scenario, not reachable from the canonical generator.",
+      "severity": "minor",
+      "repair_or_test": "Optional: require evidence_refs entries to be nonempty strings matching a reference pattern, and/or a minimum reason length. Document as optional hardening."
+    },
+    {
+      "file": "src/report_statistics.py",
+      "function_or_field": "injection_statistics",
+      "record_or_line": "lines 47-48",
+      "problem": "Composite keys use pipe-joined QIDs and position strings. Safe under current QID/PID regex constraints, but theoretically vulnerable to delimiter collision under schema evolution.",
+      "concrete_evidence_or_counterexample": "QIDs are matched by `^Q[1-9][0-9]*$` and PIDs similarly, so '|' cannot occur in these identifiers. The risk is purely hypothetical.",
+      "severity": "minor",
+      "repair_or_test": "Optional: use tuple keys instead of joined strings."
+    },
+    {
+      "file": "src/snapshot_visibility.py",
+      "function_or_field": "build_injection_visibility",
+      "record_or_line": "lines 4-22",
+      "problem": "The key 'injected_visible_edges' names edge-snapshot pairs, not unique synthetic edges across all snapshots. The per-snapshot sums (642+649+609=1900) exceed the unique injected edge count (774), so downstream automated consumers could mis-sum.",
+      "concrete_evidence_or_counterexample": "Structural report table shows the same per-snapshot counts as the baseline audit and README clarifies overlap, but the key name itself remains ambiguous.",
+      "severity": "minor",
+      "repair_or_test": "Optional: rename or add a sibling key 'injected_visible_edge_snapshot_pairs' while preserving backward compatibility."
+    },
+    {
+      "file": "src/validate_original.py",
+      "function_or_field": "qa_positive_triples",
+      "record_or_line": "lines 11-37",
+      "problem": "Duplicate intermediate QIDs are deduplicated, but no assertion documents that duplicate annotation equivalence is assumed. This is adequately conservative and tested, but a brief comment would remove reviewer ambiguity.",
+      "concrete_evidence_or_counterexample": "test_injection.py verifies no false second-hop pairing when multiple intermediates exist; test_original_audit.py confirms 20 such records. No functional issue found.",
+      "severity": "minor",
+      "repair_or_test": "Optional comment only."
+    },
+    {
+      "file": "tools/package_release_v2.py",
+      "function_or_field": "included",
+      "record_or_line": "lines 29-34",
+      "problem": "Credential exclusion uses exact filename/path allowlists, so a differently named secret (e.g., credentials.json) under a runtime directory would be packaged.",
+      "concrete_evidence_or_counterexample": "The delivered package was clean, and the documented policy explicitly scopes exclusions by explicit filenames. The risk is best-effort by design.",
+      "severity": "minor",
+      "repair_or_test": "Optional: add pattern-based secret detection or document that non-enumerated filenames are not excluded."
+    },
+    {
+      "file": "README.md",
+      "function_or_field": "Validation and delivery",
+      "record_or_line": "line 49",
+      "problem": "'Three full CLI runs' refers to test_reproducibility.py's seeds [42,42,43], while portable_reproduction.json contains only two clean regeneration runs plus canonical comparison. Internally consistent but easy to misread.",
+      "concrete_evidence_or_counterexample": "portable_reproduction.json shows two run_logs entries and two run_output_sha256 entries; test_reproducibility.py runs three subprocesses. No contradiction exists.",
+      "severity": "minor",
+      "repair_or_test": "Optional clarification to avoid cross-document reader confusion."
+    }
+  ],
+  "verified_checks": [
+    "Original counts preserved: 7868 nodes, 7737 edges, 18436 QA, 496 unresolved; serialized prefix and metadata byte-identical.",
+    "Budget math correct: round_half_even(Decimal(7737)*Decimal('.10')) = 774; total edges 8511.",
+    "Only injected edges carry value='fake' and edge_origin='synthetic_injection'; no original node or edge relabeled.",
+    "Truth separation maintained: 774 unresolved, 0 verified_true, 0 verified_false; legacy unverified retained; no absence-to-false or current-to-historical inference.",
+    "Pair-local candidate-specific transposition independently reconstructed in validate_poisoned.py; every accepted candidate has non-empty changed_positions.",
+    "Directed role evidence independently recomputed from original graph; missing donor evidence rejects 2883+1878 attempted candidates.",
+    "QA conservative projection avoids fabricated second-hop pairings under multiple intermediates; positives count 7738 and all checked.",
+    "Determinism verified: seed 42 byte-identical across clean runs; seed 43 differs but passes validation; input SHA-256 stable.",
+    "Source-code manifest coverage expanded to src/tests/tools/config/entry scripts/requirements; delivered manifest hashes align with reported clean-copy parity after coordinator fix.",
+    "Snapshot adapter activates only missing endpoint observations (6/1/4 activations); zero dangling endpoints; original node observation lists unchanged.",
+    "Structural diagnostics complete for all 774 edges across ten seeds with zero fallback; actual changed-position distribution 388 source-only, 386 target-only, 0 two-position.",
+    "No training, KGQA efficacy, attack-success, or factual-truth inference claimed anywhere in delivered text."
+  ],
+  "unsupported_claims": [
+    "The previously flagged one- vs two-position baseline contradiction is refuted by actual structural metrics showing 0 two-position swaps and all 774 entering every random run without filtering.",
+    "The pre-shuffle sort is not dead code; supplied counterexample confirms caller-order independence under a fixed seed, refuting the earlier claim.",
+    "The anomalous October timestamp is consistent with the supplied client date 2026-10-16; no chronology defect.",
+    "No reviewer found a concrete failing current-release case for the bundled credential allowlist, pipe-join keys, or evidence schema reason/refs structure; these remain optional hardening, not supported defects."
+  ],
+  "recommended_fixes": [
+    "Rename 'alternative_path_fraction' in structural comparison output and bounded-interpretation text to 'alternative_path_fraction_in_augmented_graph' or repeat the synthetic-path caveat inline at the final paragraph.",
+    "Optionally add a second random-baseline variant restricted to selected hubs to characterize mechanism-matching sensitivity; document current baseline as role-and-degree-bin conditional.",
+    "Retain numeric invariant checks but leave honest unresolved status/coverage limits exactly as delivered.",
+    "For evidence-cache ingestion, add lightweight schema validation for evidence_refs items and reason content if externally supplied adjudications become a production path."
+  ],
+  "evidence_references": [
+    "run_task1.py lines 62-64 and current outputs/injection_manifest.json source_code_sha256 coverage verify the expanded hashing fix.",
+    "tests/test_revision_schema.py test_every_accepted_candidate_has_a_changed_position and test_all_three_snapshots_activate_only_missing_observations.",
+    "tests/test_injection.py test_qa_multiple_intermediates_no_false_second_hop_pairing and test_donor_relation_role_evidence_required.",
+    "reports/revision_audit/sampling_sort_counterexample.json lines 1-4 for pre-shuffle sort necessity.",
+    "reports/revision_audit/portable_reproduction.json lines 8-25 and 30-64 for clean regeneration parity.",
+    "reports/revision_audit/structural_support.md lines 17-25, 30-41, 44-46 for baseline and alternative-path reporting.",
+    "outputs/injection_manifest.json lines 51-101 for candidate diagnostics and rejected donor-evidence counts.",
+    "src/validate_poisoned.py lines 42-93 for independent role-evidence and provenance reconstruction.",
+    "reports/validation_results.json lines 2-38 for all checks passing.",
+    "README.md lines 19-30, 43-45, 49 for method and documented limitations."
+  ],
+  "remaining_uncertainty": "No remaining supported blocking or major implementation issue was identified in the supplied revised version. The principal live uncertainty remains the deliberate 688/774 injected claims lacking any external current-statement lookup (86/774 purposively covered), but this is a disclosed coverage limit and all claims remain unresolved without falsehood inference. The conditional structural baseline is honestly labeled as not causal or fully mechanism-identical, and the undirected projection cannot verify relation-specific facts or attack success, which the report states explicitly. Cross-OS/interpreter byte-identity remains untested by design and is not promised. The minor editorial/hardening items do not affect the delivered graph's integrity or the bounded interpretation of results."
+}
+
+PRIOR FULL-CODE REVIEW B_parsed.json
+{
+  "reviewer_model": "glm-5.3",
+  "overall_verdict": "PASS",
+  "blocking_findings": [],
+  "major_findings": [],
+  "minor_findings": [
+    {
+      "file": "reports/revision_audit/visual_review.md",
+      "function_or_field": "Reproducibility result",
+      "record_or_line": "line 66",
+      "problem": "The visual review states the copied test suite passed '48/48', while the current suite and tests_summary.json report 51/51. The visual review predates three added regression tests (nonempty changed positions, unsupported-factual-truth tamper, presort order independence); the count was accurate when written but is stale relative to the current release.",
+      "concrete_evidence_or_counterexample": "visual_review.md line 66: 'copied test suite 48/48 passed' vs reports/tests_summary.json lines 1-8: 'tests_run': 51, 'passed': 51, and portable_reproduction.json tests_stdout listing 51 tests OK.",
+      "severity": "minor",
+      "repair_or_test": "Re-run the visual-review reproduction paragraph after the final test additions and update 48/48 to the current count, or timestamp the sentence to the release revision it describes."
+    },
+    {
+      "file": "run_task1.py",
+      "function_or_field": "run / output filename",
+      "record_or_line": "line 81",
+      "problem": "Retained from round 1: a fixed output filename pat_kg_poisoned_10pct.json is written regardless of --injection-ratio, so a non-default ratio produces a misleadingly named artifact. README line 17 discloses this and the manifest records the actual ratio, so it remains a mild editorial risk, not a factual-integrity defect.",
+      "concrete_evidence_or_counterexample": "run_task1.py line 81 writes 'pat_kg_poisoned_10pct.json' unconditionally; the only ratio guard is documentation in README and injection_manifest.json 'configuration.injection_ratio'.",
+      "severity": "minor",
+      "repair_or_test": "Optionally emit a warning or refuse a non-0.10 ratio under the fixed name; no functional change required for this release."
+    },
+    {
+      "file": "src/snapshot_visibility.py",
+      "function_or_field": "build_injection_visibility / injected_visible_edges",
+      "record_or_line": "lines 20-21",
+      "problem": "Per-snapshot 'injected_visible_edges' counts edge-snapshot pairs (642+649+609=1900 for 774 unique triples). This is semantically correct and disclosed in README line 45, but the machine-readable key remains ambiguous for automated consumers.",
+      "concrete_evidence_or_counterexample": "structural_support.md lines 32-36 and visual_review.md lines 43-47 show the overlapping counts; the baseline audit's 'distinct_visibility_mismatches': 38 shows the authors track uniqueness separately, so no miscount occurs in-house.",
+      "severity": "minor",
+      "repair_or_test": "Add a schema note or an additional field 'injected_unique_edges_visible_in_snapshot' in a future schema version; backward compatible."
+    }
+  ],
+  "verified_checks": [
+    "Source-hash coverage fix is real and complete: run_task1.py lines 62-64 now iterate ('src','tests','tools') plus both entry scripts, requirements.txt and config; outputs/injection_manifest.json source_code_sha256 (lines 162-201) contains tests/, tools/ (audit_facts_v2, analyze_structure_v2, package_release_v2, export_snapshot_v2, etc.), run_tests.py, requirements.txt and config/task1_config.json. C-major-2 is fixed as claimed.",
+    "Two-position baseline concern resolved by complete data: structural_support.md line 40 reports changed-position counts {'source': 388, 'target': 386, two-position 0} and states all 774 edges enter each of the ten random runs; random_baseline's one-position restriction therefore never triggers on the actual population, and tests/test_structure_v2.test_reject_unsupported_both_position_stratum verifies the refusal is loud rather than silent filtering. A-major-4 refutation is supported.",
+    "Pre-shuffle sort necessity is demonstrated by executable counterexample: sampling_sort_counterexample.json shows removing the sort changes selection under reordered input (Q1,Q11,Q2,Q4,Q5 vs Q11,Q12,Q2,Q8,Q9), and tests/test_revision_schema.test_presort_is_needed_for_input_order_independent_seed asserts order independence with the sort. C-major-1 'dead code' claim is refuted; the sort is load-bearing for caller-order-independent seeding.",
+    "Fake-as-synthetic-class separation is enforced end-to-end: augment_graph 'synthetic_class_semantics' (inject_misinformation.py lines 104-107), validate_poisoned 'explicit_synthetic_identity' requiring value=='fake' only on synthetic_injection edges, independent_reconciliation.json fake_original_edges=0 / fake_nodes=0, and test_revision_schema.test_fake_labels_edges_and_separate_unresolved_truth plus test_label_tamper_is_rejected. No real node or original edge carries the label.",
+    "Legacy-vs-current status separation is intact: every injected edge retains injection_provenance.factual_verification_status=='unverified' while the separate factual_verification.status is 'unresolved'; both appear in the manifest as distinct blocks (factual_verification and factual_verification_v2, 774/0/0). validate_poisoned checks both ('honest_factual_status', 'separate_factual_verification').",
+    "No absence-to-false or current-to-historical inference: factual_verification.py defaults to unresolved with 'Absence is not falsity'; _usable requires independently_reviewed, direct_claim_evidence, temporal_scope, scope_matches_claim and nonempty evidence; conflicts stay unresolved (tests lines 43-55); audit_facts_v2.py line 115 explicitly states raw matching current statements 'do not establish historical truth'; the 86/774 sample found no identical current claim yet all remain unresolved.",
+    "Original preservation verified structurally and on serialized artifacts: validate_poisoned checks preserved nodes/relations/questions/unresolved_paths/metadata and exact ordered edge prefix; run_task1.py lines 111-118 re-validate the reloaded serialized file; test_reproducibility.test_serialized_preservation_of_every_original_object compares the serialized output to the input JSON object-by-object; input checksums confirmed unchanged during and after execution.",
+    "Overlay visibility solves endpoint mismatches without editing observations: build_injection_visibility activates only QIDs missing an original observation per snapshot (6/1/4 activations vs baseline 19/6/19 violating edges, 38 distinct); snapshot_view unions observed|activated with wrappers and legends; test_all_three_snapshots_activate_only_missing_observations asserts node lists are byte-unchanged; test_missing_overlay_activation_fails rejects invented activations; validate_poisoned re-derives exact_overlay_visibility independently.",
+    "Unsupported truth tamper now rejected: validate_poisoned lines 24-27 rederive annotations under the same evidence context and test_unsupported_factual_truth_tamper_is_rejected passes, confirming ROOT-TRUTH-01's fix does not conflate the synthetic class label with factual verdicts.",
+    "Config and counts agree across all supplied artifacts: ratio .10, seed 42, top_k_max 20, hub_metric total_degree in config/task1_config.json, run_task1.py defaults, manifest configuration and structural report; 7868/7737/18436/496 in EXPECTED and test_actual_dataset_counts; 774 = ROUND_HALF_EVEN(7737*0.10) tested; 8511 total; deterministic byte-identical clean runs with seed-43 divergence; all internally consistent with portable_reproduction.json hashes.",
+    "Scope compliance: pair-local transpositions only (permutation_scope in manifest and per-candidate pair_permutation), overlapping pairs allowed, no global rewiring, no training or efficacy experiment; README's LogicPoison differentiation is accurate to the described method."
+  ],
+  "unsupported_claims": [
+    "README line 39's 'actual before/after rendered inspection' of the SVGs remains a self-reported manual/browser step: the numerical-geometry audit is code-evidenced (audit_facts/visual counts, test_portable_v2), and visual_review.md describes the rendering process, but this text reviewer cannot independently verify pixel inspection; Gemini's image-based review of the two 'after' PNGs is the only direct visual evidence, and 'before' PNGs were not attached to this review.",
+    "Wikidata external-coverage figures (4 requests, 40 subjects, 86 edges, 0 identical claims) are supported by the supplied audit_facts_v2.py code and cached summaries, but the live API responses themselves are not in the bundle; the pipeline's conservative treatment means no conclusion depends on them."
+  ],
+  "recommended_fixes": [
+    "Update the stale 48/48 test count in visual_review.md to the current 51/51 (or annotate its revision date).",
+    "Optionally add a uniqueness-clarifying field alongside injected_visible_edges and a ratio-conditional warning for the fixed 10pct filename.",
+    "Carry the 86/774 (11.1%) external-coverage fraction wherever the factual audit is summarized in one sentence, as already done in FINAL_REPORT_v2.md line 13; ensure downstream summaries inherit it."
+  ],
+  "evidence_references": [
+    "run_task1.py lines 62-64, 81, 108-122",
+    "src/generate_candidates.py lines 48-81; src/inject_misinformation.py lines 21-56, 94-113",
+    "src/factual_verification.py lines 16-64; src/snapshot_visibility.py lines 4-56; src/validate_poisoned.py lines 17-98",
+    "outputs/injection_manifest.json lines 2-14, 51-101, 103-111, 153-158, 162-207",
+    "reports/validation_results.json lines 1-40; reports/tests_summary.json lines 1-8",
+    "reports/revision_audit/structural_support.md lines 3, 17-28, 32-46; sampling_sort_counterexample.json; independent_reconciliation.json; 00_baseline_audit.md lines 29-46",
+    "reports/revision_audit/visual_review.md lines 43-49, 66; portable_reproduction.json lines 8-67",
+    "reports/revision_audit/factual_verification_summary.md lines 1-31; tools/audit_facts_v2.py lines 95-146",
+    "reports/FINAL_REPORT_v2.md lines 11-29, 49-68; reports/REPRODUCTION_v2.md lines 16-42",
+    "tests/test_revision_schema.py; tests/test_temporal_semantics.py; tests/test_reproducibility.py; tests/test_structure_v2.py; tests/test_factual_v2.py"
+  ],
+  "remaining_uncertainty": [
+    "No execution tools are available to this reviewer; all pass/fail determinations rely on the supplied logs, which are mutually consistent (hashes, counts, check names and stdout align across manifest, validation results, structural report and portable reproduction).",
+    "The 688 externally unaudited injected claims remain without current-statement lookup by design; this is an honestly disclosed coverage limitation, not a defect, because no truth label is inferred from absence and all 774 receive local KG/QA checks.",
+    "Cross-OS/interpreter byte reproducibility and the browser-rendered 'before' images are documented as untested/unseen here; neither affects factual or temporal-semantics integrity of the delivered artifacts."
+  ]
+}
+
+PRIOR FULL-CODE REVIEW C_parsed.json
+{
+  "reviewer_model": "qwen3.8-max",
+  "overall_verdict": "PASS",
+  "blocking_findings": [],
+  "major_findings": [
+    {
+      "file": "src/inject_misinformation.py",
+      "function_or_field": "balanced_sample",
+      "record_or_line": "38-39",
+      "problem": "I previously classified the pre-shuffle deterministic sort as dead code that obscures selection order. The coordinator's cross-examination directs me to use the supplied executable counterexample.",
+      "concrete_evidence_or_counterexample": "reports/revision_audit/sampling_sort_counterexample.json records 'production_sort_makes_input_order_irrelevant': true and 'removing_sort_changes_selection_under_reordered_input': true, with distinct source_id lists before and after removal. Python's Mersenne Twister shuffle output depends on list length and element positions; without the canonical sort, different caller input orders produce different internal list layouts, causing identical seeds to yield different selections. My prior claim was factually incorrect.",
+      "severity": "medium",
+      "repair_or_test": "Retain the sort. Add an inline comment at line 38: '# Canonical sort ensures seed-deterministic selection regardless of caller input order.'"
+    }
+  ],
+  "minor_findings": [
+    {
+      "file": "tools/analyze_structure_v2.py",
+      "function_or_field": "random_baseline",
+      "record_or_line": "167-168",
+      "problem": "Reviewer A hypothesized a two-position baseline mismatch. The coordinator asks whether actual counts resolve this. I verify the resolution against the supplied structural report.",
+      "concrete_evidence_or_counterexample": "reports/revision_audit/structural_support.md line 40 states: 'Actual changed-position counts: {\"source\": 388, \"target\": 386}'. Sum is exactly 774. Zero edges have two changed positions. The ValueError at line 168 ('Baseline supports exactly one changed endpoint') is never triggered for this dataset. All 774 edges enter each of the ten random runs. Reviewer A's concern is fully refuted by concrete evidence.",
+      "severity": "low",
+      "repair_or_test": "No repair required. The explicit count in the report is sufficient."
+    },
+    {
+      "file": "src/validate_poisoned.py",
+      "function_or_field": "validate_poisoned",
+      "record_or_line": "24-27",
+      "problem": "The ROOT-TRUTH-01 bug allowed fabricated verified_false annotations with unsupported citations. The coordinator asks whether explicit-evidence rederivation rejects this without conflating fake and false.",
+      "concrete_evidence_or_counterexample": "Lines 24-27 construct expected_truth as independent copies, call annotate_factual_verification(original, expected_truth, evidence_cache_path) with no external cache during default validation, then compare edge['factual_verification'] == expected['factual_verification']. Since annotate_factual_verification defaults to 'unresolved' when no independently reviewed evidence matches, any tampered 'verified_false' status fails equality. tests/test_revision_schema.py lines 67-72 explicitly test this rejection path. The value='fake' synthetic label is checked separately at line 58 ('explicit_synthetic_identity'), preventing conflation.",
+      "severity": "low",
+      "repair_or_test": "No repair required. The fix is verified by test_unsupported_factual_truth_tamper_is_rejected."
+    },
+    {
+      "file": "run_task1.py",
+      "function_or_field": "run",
+      "record_or_line": "62-64",
+      "problem": "I previously reported that source_code_sha256 omitted tools/ and tests/. The coordinator marked this fixed. I verify the current code includes them.",
+      "concrete_evidence_or_counterexample": "Line 62 now reads: source_files=[p for folder in ('src','tests','tools') for p in (ROOT/folder).glob('*.py')]. Line 63 adds run_task1.py, run_tests.py, requirements.txt, config/task1_config.json. outputs/injection_manifest.json lines 162-201 confirm hashes for all 39 files including tests/*, tools/*, and config/*. My prior finding is resolved in the supplied version.",
+      "severity": "low",
+      "repair_or_test": "No further action needed."
+    }
+  ],
+  "verified_checks": [
+    {
+      "check": "Exact budget computation: injection_budget(7737, '0.10') == 774 via ROUND_HALF_EVEN",
+      "evidence": "src/inject_misinformation.py:14-18; tests/test_injection.py:15-16; outputs/injection_manifest.json target_injected_edges=774"
+    },
+    {
+      "check": "Deterministic byte-identical reproduction across two seed-42 clean runs",
+      "evidence": "reports/revision_audit/portable_reproduction.json two_clean_runs_byte_identical=true; all four output SHA-256 hashes match between run_0, run_1, and canonical_output_sha256"
+    },
+    {
+      "check": "All 774 injected edges carry value='fake' and factual_verification.status='unresolved'",
+      "evidence": "src/inject_misinformation.py:68; src/factual_verification.py:49; synthetic record samples; reports/validation_results.json checks passed"
+    },
+    {
+      "check": "Original graph objects preserved exactly (nodes, relations, questions, unresolved_paths, edge prefix)",
+      "evidence": "src/inject_misinformation.py:96-97; tests/test_reproducibility.py:65-70; reports/validation_results.json preserved_nodes=true, preserved_original_edges_in_order=true"
+    },
+    {
+      "check": "Pairwise transposition applied to both endpoints verified independently per edge",
+      "evidence": "src/validate_poisoned.py:64-73; tests/test_injection.py:22-29; reports/validation_results.json pairwise_permutation_both_endpoints=true"
+    },
+    {
+      "check": "Snapshot visibility adapter activates only missing observations without mutating original node lists",
+      "evidence": "src/snapshot_visibility.py:18-19; tests/test_revision_schema.py:29-47; reports/revision_audit/structural_support.md activation counts 6/1/4"
+    },
+    {
+      "check": "Adversarial tampering detection rejects altered provenance, wrong labels, and invented validity fields",
+      "evidence": "tests/test_injection.py:59-66; tests/test_revision_schema.py:62-72; tests/test_temporal_semantics.py:36-42; src/validate_poisoned.py:90-98 exact field whitelist"
+    },
+    {
+      "check": "Portable packaging excludes credentials, caches, and original datasets while recording input SHA-256",
+      "evidence": "tools/package_release_v2.py:15-17,30-34; tests/test_portable_v2.py:14-37"
+    },
+    {
+      "check": "QA positive triple exclusion prevents injecting known conservatively projectable facts",
+      "evidence": "src/generate_candidates.py:70-71; src/validate_original.py:11-37; tests/test_injection.py:48-57 multiple intermediate guard"
+    },
+    {
+      "check": "Role/direction compatibility enforced via empirical donor evidence signatures",
+      "evidence": "src/generate_candidates.py:64-67; src/validate_poisoned.py:77-81; outputs/injection_manifest.json rejected_by_reason shows missing_source/target_donor_evidence rejections"
+    },
+    {
+      "check": "Source code manifest now covers src/, tests/, tools/, entry scripts, config, and requirements",
+      "evidence": "run_task1.py:62-63; outputs/injection_manifest.json source_code_sha256 contains 39 entries"
+    },
+    {
+      "check": "Pre-shuffle sort guarantees caller-input-order independence under fixed seed",
+      "evidence": "reports/revision_audit/sampling_sort_counterexample.json production_sort_makes_input_order_irrelevant=true; tests/test_revision_schema.py:74-76 test_presort_is_needed_for_input_order_independent_seed"
+    },
+    {
+      "check": "Structural baseline processes all 774 edges without two-position rejection",
+      "evidence": "reports/revision_audit/structural_support.md line 40 changed-position counts sum to 774; tools/analyze_structure_v2.py:167-168 ValueError never triggers"
+    }
+  ],
+  "unsupported_claims": [],
+  "recommended_fixes": [
+    "Add an inline comment at src/inject_misinformation.py line 38 documenting that the pre-shuffle sort is required for caller-input-order independence, not dead code.",
+    "Consider parameterizing the subprocess timeout in tests/test_reproducibility.py via environment variable for CI stability, though 180s is adequate for the documented CPython 3.10.0/Windows environment."
+  ],
+  "evidence_references": [
+    "README.md lines 19-29 method description matches implementation",
+    "config/task1_config.json documents all defaults used in run_task1.py",
+    "run_task1.py lines 46-56 expansion loop terminates when candidates >= target or sizes stop changing",
+    "outputs/injection_manifest.json confirms 9853 candidates, 774 injected, 0 expansion rounds needed, 39 source hashes",
+    "reports/validation_results.json shows all 31 checks passed including serialized_graph_equals_generated_graph",
+    "reports/revision_audit/portable_reproduction.json proves clean regeneration matches delivered outputs byte-for-byte",
+    "reports/revision_audit/sampling_sort_counterexample.json proves pre-shuffle sort necessity",
+    "reports/revision_audit/structural_support.md line 40 proves zero two-position swaps",
+    "reports/revision_audit/00_baseline_audit.md documents v1 snapshot mismatches now resolved by v2 visibility adapter",
+    "Synthetic record samples demonstrate complete provenance chain with correct swap semantics"
+  ],
+  "remaining_uncertainty": "The 9853 candidate pool size depends on the specific input graph topology; I cannot independently execute the pipeline against the real dataset to recompute it, but the portable reproduction evidence and independent_candidate_count.json confirm it deterministically. Cross-OS and cross-interpreter byte reproducibility remains documented as untested beyond CPython 3.10.0 on Windows. No formal JSON Schema document exists; validation is procedural via validate_poisoned.py with an exact field whitelist. These are acknowledged honest limitations, not hidden defects."
+}
+
+PRIOR FULL-CODE REVIEW D_parsed.json
+{
+  "reviewer_model": "gemini-4-argon-contributor",
+  "overall_verdict": "PASS",
+  "blocking_findings": [],
+  "major_findings": [],
+  "minor_findings": [
+    {
+      "file": "reports/revision_audit/visual_review.md",
+      "function_or_field": "Reproducibility result",
+      "record_or_line": "line 65",
+      "problem": "Stale test count in the prose of `visual_review.md` states 'copied test suite 48/48 passed', whereas the regenerated `portable_reproduction.json` (line 67), `tests_summary.json` (line 2), and `FINAL_REPORT_v2.md` (lines 35, 63) reflect the updated 51/51 test suite after adding 3 Round-1 regression tests.",
+      "concrete_evidence_or_counterexample": "`reports/revision_audit/visual_review.md` line 65 reads `copied test suite 48/48 passed with no skips`, while `reports/revision_audit/portable_reproduction.json` line 67 records `Ran 51 tests in 23.071s ... {\"tests_run\": 51, ... \"passed\": 51}`.",
+      "severity": "minor",
+      "repair_or_test": "Update `48/48` to `51/51` in `reports/revision_audit/visual_review.md` line 65 for prose consistency across all audit reports."
+    },
+    {
+      "file": "src/report_statistics.py",
+      "function_or_field": "bar_chart",
+      "record_or_line": "lines 60-73; attached PNG 1 (injected_by_relation.png) and PNG 2 (injected_by_type.png)",
+      "problem": "The relation chart renders raw Wikidata property IDs (`P102` through `P69`) without human-readable labels, and neither SVG embeds an accessible screen-reader table.",
+      "concrete_evidence_or_counterexample": "In attached PNG 1 (`injected_by_relation.png`), the y-axis labels are strictly `P102`, `P108`, ..., `P69`. `reports/revision_audit/visual_review.md` (lines 31-33) explicitly documents this design choice to avoid invented property names and relies on the accompanying JSON statistics for machine-readable table access.",
+      "severity": "minor",
+      "repair_or_test": "Optional editorial enhancement for formal publication: append canonical relation labels from `graph['relations']` alongside property IDs (e.g., `P488 (chairperson)`)."
+    }
+  ],
+  "verified_checks": [
+    "Direct visual inspection of attached PNG 1 (`injected_by_relation.png`): title 'Injected triples by relation' and subtitle 'Synthetic injection counts; not verified factual falsity. Unique triples.' are sharp, unclipped, and truthfully distinguish synthetic overlay counts from verified factual falsity.",
+    "Direct visual inspection of attached PNG 1 (`injected_by_relation.png`): all 18 relation categories (`P102` to `P69` in lexical order), horizontal `#245c91` bars, and right-hand integer labels (33, 60, 69, 57, 19, 32, 59, 14, 41, 8, 30, 9, 2, 32, 129, 9, 61, 110; sum = 774) are completely legible with zero text/bar overlap or canvas clipping.",
+    "Direct visual inspection of attached PNG 2 (`injected_by_type.png`): title 'Injected triples by swapped general entity type' and subtitle 'Synthetic injection counts; not verified factual falsity. Unique triples.' are clearly rendered and unclipped.",
+    "Direct visual inspection of attached PNG 2 (`injected_by_type.png`): all 23 general entity type labels (including the longest `HigherEducationInstitution` at x=20, width=167.52px, ending at 187.52px well before the bar start at x=260), horizontal bars, and integer counts (twelve types at 48, SportsTeam at 47, MediaOrganization at 28, EducationalInstitution at 24, Concept at 17, ResearchInstitution at 9, CulturalInstitution at 7, SportsOrganization at 7, CentralBank at 5, ReligiousOrganization at 4, CulturalOrganization at 2; sum = 774) are crisp, non-overlapping, and well inside the 920x744 canvas.",
+    "Cross-check of visual geometry against `tools/audit_visuals_v2.py` and `reports/revision_audit/visual_counts_after.json`: every bar width equals `540 * count / max_count` within 0.00501px, every numeric value label sits at `x = 270 + width`, and the rightmost text bounding box (`129` at x=810, width=23.25px -> right edge 833.25px) leaves >86px right margin on the 920px canvas.",
+    "Cross-examination of Reviewer C (C-major-1) and Reviewer A (A-major-2) on `balanced_sample` pre-shuffle sorting: Reviewer C's claim that `buckets[kind][relation].sort(key=triple)` before `rng.shuffle(...)` is 'dead code' is mathematically false because `random.Random.shuffle` is an in-place index permutation whose result depends on the initial list order. `reports/revision_audit/sampling_sort_counterexample.json` and `test_presort_is_needed_for_input_order_independent_seed` prove that removing the sort alters the sampled triples (`['Q1','Q11','Q2','Q4','Q5']` vs `['Q11','Q12','Q2','Q8','Q9']`) when caller input order varies. README line 45 also explicitly documents bucket exhaustion semantics.",
+    "Cross-examination of Reviewer A (A-major-1 & A-major-4) on changed positions and two-position structural baseline strata: `reports/revision_audit/structural_support.md` line 40 and `test_every_accepted_candidate_has_a_changed_position` confirm the exact distribution across the 774 injected edges is `{'source': 388, 'target': 386}` with 0 zero-position and 0 two-position swaps. All 774 edges enter every one of the 10 random baseline seeds (`Exact degree-bin matched edges: [774, ..., 774]`, fallback `[0, ..., 0]`) without any hidden filtering.",
+    "Cross-examination of Reviewer C (C-major-2) and Reviewer B (B-minor-2) on manifest coverage and bundle completeness: `run_task1.py` lines 62-64 and `outputs/injection_manifest.json` lines 162-202 now hash all `src/*.py`, `tests/*.py`, `tools/*.py`, entry scripts, `requirements.txt`, and `config/task1_config.json` (39 files total), and `portable_reproduction.json` confirms byte-identical clean regeneration across two fresh runs matching `pat_kg_poisoned_10pct.json` (`7abb46ca160a7fe0b300653cc0a8c8221e6e728af25971c14b2f18f11b7f5707`). All previously missing files (`tools/audit_facts_v2.py`, `FINAL_REPORT_v2.md`, `REPRODUCTION_v2.md`, `visual_review.md`) are present and verified in the current bundle.",
+    "Cross-examination of ROOT-TRUTH-01 and factual verification separation: `reports/validation_results.json` line 13 (`factual_verdicts_match_explicit_evidence_context: true`) and `test_unsupported_factual_truth_tamper_is_rejected` confirm the validator rederives factual status against explicit evidence and rejects fabricated `verified_false`/`verified_true` labels. All 774 injected edges have `value: \"fake\"` (synthetic class only), 0 real nodes or original edges are labeled fake, and `factual_verification.status` is `unresolved` for all 774 edges (`verified_false: 0`, `verified_true: 0`).",
+    "Verification of snapshot visibility adapter and scope constraints: original counts (7,868 nodes, 7,737 edges, 18,436 QA, 496 unresolved paths) and configuration (ratio=0.10, seed=42, initial top_k_max=20, hub_metric=total_degree) are preserved; 774 unique edges are added for 8,511 total edges; the non-mutating snapshot adapter activates 6/1/4 real QIDs in Dec2021/Dec2023/March2024 to resolve all 38 baseline visibility mismatches with 0 dangling edges and no edits to original node `observed_in_snapshots` lists."
+  ],
+  "unsupported_claims": [],
+  "recommended_fixes": [
+    "Update the single remaining prose reference from `48/48` to `51/51` in `reports/revision_audit/visual_review.md` line 65.",
+    "If the SVG charts are later adapted into a formal paper, consider appending human-readable relation labels next to the Wikidata P-IDs in `injected_by_relation.svg`."
+  ],
+  "evidence_references": [
+    "Attached PNG 1 (`output/playwright/after/injected_by_relation.png`)",
+    "Attached PNG 2 (`output/playwright/after/injected_by_type.png`)",
+    "README.md:1-57",
+    "run_task1.py:21-126",
+    "src/report_statistics.py:60-98",
+    "tools/audit_visuals_v2.py:16-91",
+    "tools/audit_facts_v2.py:1-150",
+    "outputs/injection_manifest.json:1-208",
+    "reports/validation_results.json:1-40",
+    "reports/tests_summary.json:1-8",
+    "reports/revision_audit/visual_review.md:1-65",
+    "reports/revision_audit/visual_counts_after.json:1-845",
+    "reports/revision_audit/sampling_sort_counterexample.json:1-18",
+    "reports/revision_audit/structural_support.md:1-50",
+    "reports/revision_audit/factual_verification_summary.md:1-32",
+    "reports/revision_audit/portable_reproduction.json:1-69",
+    "reports/FINAL_REPORT_v2.md:1-69"
+  ],
+  "remaining_uncertainty": [
+    "No known supported blocking or major implementation issue remains.",
+    "Only the two attached 'after' PNG figures (`injected_by_relation.png` and `injected_by_type.png`) were provided in this prompt; the 'before' PNGs and any browser rendering of `PAT_Temporal_KG_Explorer.html` were not attached and therefore were not visually inspected, consistent with the documentation's stated boundary.",
+    "All 774 injected claims remain factually `unresolved` with 86/774 (11.1%) purposively checked against live Wikidata statements and 688/774 unchecked externally, and clean-copy byte reproducibility was executed on Windows 10 / CPython 3.10.0; both are transparently disclosed methodological/environment boundaries rather than defects."
+  ]
+}
+
+CURRENT reports/revision_audit/structural_support.md
+# Structural support diagnostic
+
+Computed from 7,868 original nodes, 7,737 original triples and 774 injected triples; 206 selected hubs. Completed random seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].
+
+## Definitions and scope
+
+Directed edge degree counts relation triples. Clustering, common neighbors, components and alternative paths use simple undirected projection; paths exclude the tested triple but preserve another parallel/reverse triple.
+
+Alternative paths are measured in the completed augmented graph after removing the tested injected triple. They may use other synthetic triples. Original same-component and common-neighbor measurements use only original edges. Clustering assigns zero to degree below two. All original nodes, including isolates, enter global component counts.
+
+## Controlled random comparison
+
+Per injected source-edge provenance: exact relation/type/changed-position/source snapshot stratum; eligible original role-compatible donor, pair transposition, reject self/original/QA-positive/duplicate; random shuffled same power-of-two original replacement degree bin first, compatible random fallback if exhausted. Hub donors remain eligible. No global eligible pair enumeration.
+
+The random diagnostic intentionally removes hub-ranked donor selection; it is a role-and-degree-bin-conditional comparison, not an exact null for the hub-ranked mechanism. Same source-edge and counterpart preserve source snapshot handling exactly; activation counts can differ because randomly replaced nodes have different original QA observations. Degree bins are [1], [2,3], [4,7], etc.; same bin does not mean equal degree. Endpoint degree means and fallback counts are reported. This is a conditional descriptive comparison, not a causal or fully degree-matched fairness claim.
+
+| Metric | Hub | Random mean | Hub minus random | Seed SD | Random min/max |
+|---|---:|---:|---:|---:|---|
+| endpoint_original_degree_mean | 4.58204 | 4.40795 | 0.174096 | 0.013565 | [4.385658914728682, 4.427648578811369] |
+| original_common_neighbor_mean | 0.00129199 | 0.00129199 | 0 | 0.00105491 | [0, 0.002583979328165375] |
+| augmented_common_neighbor_mean | 0.0426357 | 0.0286822 | 0.0139535 | 0.00309359 | [0.025839793281653745, 0.03488372093023256] |
+| original_same_component_fraction | 0.580103 | 0.582946 | -0.00284238 | 0.00742941 | [0.5736434108527132, 0.5956072351421189] |
+| alternative_path_fraction | 0.998708 | 0.926873 | 0.0718346 | 0.00721152 | [0.9108527131782945, 0.9354005167958657] |
+| component_count | 764 | 701.9 | 62.1 | 3.60401 | [695, 706] |
+
+Intervals in JSON are approximate 95% Monte Carlo intervals for the random-baseline mean across completed seeds (normal approximation); they are not confidence intervals for graph sampling, factual falsity, downstream efficacy, or causal hub effects. Standardized differences use between-seed SD, not edge-level pooled effect sizes.
+
+Degree-bin fallback edges by seed: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]. Exact degree-bin matched edges: [774, 774, 774, 774, 774, 774, 774, 774, 774, 774].
+
+## Snapshot-aware effects
+
+| Snapshot | Visible injected | Both originally observed | Synthetic node activations required | Active components |
+|---|---:|---:|---:|---:|
+| Dec2021 | 642 | 623 | 6 | 800 |
+| Dec2023 | 649 | 643 | 1 | 813 |
+| March2024 | 609 | 590 | 4 | 1070 |
+
+Activation counts identify required overlay nodes, not invented historical observations. The consumer overlay adapter is validated separately. Per-seed snapshot counts, degrees, clustering distributions, components, pair/type/relation distributions and hashes are in structural_metrics.json.
+
+Actual changed-position counts: {'source': 388, 'target': 386}. All 774 edges enter each random run; no subset is filtered. Two-position refusal is a future diagnostic boundary, not a current mismatch.
+
+## Scientifically bounded interpretation
+
+Observed endpoint original mean degree is 4.5820 versus random 4.4079, despite matched bins. Original common-neighbor mean is 0.001292 versus 0.001292; original same-component fraction is 0.5801 versus 0.5829. Thus the original-topology measures do not show a consistent general connectivity advantage.
+
+After augmentation, alternative-path availability is 99.87% versus random mean 92.69%, and common-neighbor mean is 0.0426 versus 0.0287. These alternative paths may use other synthetic edges; the measures can reflect collective synthetic-edge concentration and cycles. Hub augmentation leaves 764 components versus random mean 701.9; more alternative paths therefore does not mean more global component merging.
+
+Hub endpoint degree is an explicit selection characteristic. The table tests whether it co-occurs with untyped local/path connectivity under the documented conditional baseline. Mixed, weak, or reversed effects must remain visible; selecting high-degree endpoints alone does not establish stronger relation-specific support. Untyped paths and common neighbors do not verify a directed relation or factual claim. No GNN, LLM training, KGQA experiment, attack-success evaluation or factual truth inference was performed. These diagnostics cannot establish that synthetic injections make KGQA harder.
+
+Reproduce: `python tools/analyze_structure_v2.py` from the project directory (or execute the script by absolute path). Standard library only; input paths and seed list can be overridden.
+
+CURRENT reports/revision_audit/visual_review.md
+# Delivered visualization review
+
+## Inventory and actual image inspection
+
+The release inventory contains two source figures: `reports/injected_by_relation.svg` and `reports/injected_by_type.svg`. No additional JPG, PDF, GIF or scientific plot was found in the release. Timestamped baseline releases are backups, not additional figures. This audit adds four actual Chromium-rendered PNG evidence images:
+
+- `output/playwright/before/injected_by_relation.png`
+- `output/playwright/before/injected_by_type.png`
+- `output/playwright/after/injected_by_relation.png`
+- `output/playwright/after/injected_by_type.png`
+
+Both before and both after images were opened with the image-viewing tool and visually inspected. The baseline SVG files were read from `releases/baseline_v1_20261016T103451+0900`; the after images use the regenerated current SVGs. Screenshots use actual SVG element bounds at device scale 1. No model was credited with inspecting image pixels merely from source code.
+
+## Numerical audit
+
+`tools/audit_visuals_v2.py` independently loads the baseline/revised graph and identifies injected edges by `is_poisoned is True`, without trusting precomputed statistics JSON. For each figure it recomputes category counts, parses every displayed SVG category/value, and checks every bar width against `540 * count / max_count`, to the SVG's two-decimal rounding tolerance of 0.00501 pixels. It checks count-label placement and verifies room within the canvas.
+
+| Figure | Categories | Sum | Count errors | Bar-width errors | Clipped text boxes |
+|---|---:|---:|---:|---:|---:|
+| Relation, before | 18 | 774 | 0 | 0 | 0 |
+| Entity type, before | 23 | 774 | 0 | 0 | 0 |
+| Relation, after | 18 | 774 | 0 | 0 | 0 |
+| Entity type, after | 23 | 774 | 0 | 0 | 0 |
+
+Relations: P102=33, P108=60, P112=69, P115=57, P127=19, P1365=32, P159=59, P169=14, P19=41, P26=8, P27=30, P286=9, P35=2, P39=32, P488=129, P54=9, P6=61, P69=110.
+
+Entity-type counts, full category lists and browser `getBBox()` values are recorded in `visual_counts_before.json` and `visual_counts_after.json`. The relation figure is 920 × 604 pixels; the entity-type figure is 920 × 744 pixels. There are no percentages or numerical axes to misstate. Bars share a zero baseline and each category has a direct integer label; independent scaling is per figure. No cross-figure bar-width comparison is implied.
+
+## Visual findings and repair
+
+All text remains readable at native size, including the longest `HigherEducationInstitution` label. Category labels, bars and integer labels do not overlap. Browser text bounding boxes remain inside the SVG canvas in both versions. Rows use consistent 28-pixel spacing, 20-pixel bars, sans-serif text, white background and one dark-blue color (`#245c91`). The dark blue has approximately 7:1 contrast against white; text is black. A single series needs no color legend. QID-style property labels retain exact Wikidata property IDs, avoiding invented relation names. The SVG `role=img` and `aria-label` provide a title, but a complete screen-reader data table is not embedded; the machine-readable statistics and audit JSON supply exact values.
+
+The confirmed documentation issue was a subtitle that referred to seed 42 by default and did not explicitly distinguish synthetic injection from factual falsity. The generator now uses: `Synthetic injection counts; not verified factual falsity. Unique triples.` Regenerated SVGs and actual after screenshots show this text. Counts and geometry are unchanged. No figure claims all 774 synthetic edges are proven false. The figures are suitable for a technical report; a formal publication may choose expanded property names and a typeset caption without altering the audited counts.
+
+## Graph explorer and supported consumer boundary
+
+The parent project's `PAT_Temporal_KG_Explorer.html` was inspected read-only; it is outside the revised Task 1 release. Its embedded gzip/base64 JSON was decoded independently and contains 7,868 nodes, 7,737 edges and 0 synthetic edges. At source line 98 `snapHas()` reads only `observed_in_snapshots`; line 109 filters nodes before edges; line 115 `visEdge()` does not read `value: fake`, `edge_origin` or overlay metadata. Consequently it does not implement the revised synthetic styling/visibility policy. No claim is made that fake-edge styling, browser snapshot transitions or synthetic ego-graphs were visually tested in that original-data explorer. No replacement explorer is delivered.
+
+The release instead supplies `src/snapshot_visibility.py` and `tools/export_snapshot_v2.py` as the documented consumer adapter. Its output contains node/edge wrappers with source `record` preserved, explicit `style_class`, original observation versus synthetic activation flags, and a legend separating synthetic class from factual truth. This is an exported view schema for a consumer to render; it is not a rendered interactive UI.
+
+All three snapshot CLI exports were actually executed into a fresh temporary directory and independently reloaded. `snapshot_adapter_independent.json` records:
+
+| Snapshot | Renderable nodes | Renderable edges | Synthetic edges | Overlay activated real nodes | Dangling edges | Nodes labeled fake |
+|---|---:|---:|---:|---:|---:|---:|
+| Dec2021 | 6784 | 7053 | 642 | 6 | 0 | 0 |
+| Dec2023 | 6967 | 7241 | 649 | 1 | 0 | 0 |
+| March2024 | 7090 | 7011 | 609 | 4 | 0 | 0 |
+
+These checks establish adapter-level visibility consistency, not historical factual validity or browser rendering support.
+
+## Execution provenance and limitations
+
+Playwright skill instructions were read. `npx` and Node.js were present. An initial npm CLI attempt could not write the default npm cache; no dependencies were installed. The already cached Playwright package was used directly with the already installed Chromium executable because its default browser revision was unavailable. Actual paths used:
+
+```text
+Node.js v24.18.0
+C:/Users/86185/AppData/Local/npm-cache/_npx/31e32ef8478fbf80/node_modules/playwright
+C:/Users/86185/AppData/Local/ms-playwright/chromium-1234/chrome-win64/chrome.exe
+```
+
+The screenshot/audit tool accepts explicit module/executable paths so the release has no hidden dependence on those local cache locations. They are optional render-time dependencies; graph generation and numerical chart validation remain standard-library-only. The actual before/after SVGs and PNGs were inspected locally. External-model review capabilities and any separate image review are recorded in the multi-model logs, not inferred here.
+
+## Reproducibility result
+
+`portable_reproduction.json` records an executed clean-copy verification: source/tests and separate real inputs copied to a new temporary directory, no output/cache copied, generation executed twice with seed 42, all four output file hashes identical to each other and the revised delivered outputs, copied test suite 51/51 passed with no skips. No hard links were used. This verifies clean directory execution in CPython 3.10.0 on this Windows host; independent OS/interpreter installations remain untested. The ZIP itself intentionally omits original inputs but includes their complete sizes/hashes in its manifest.
+
+CURRENT reports/tests_summary.json
+{
+  "tests_run": 51,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "passed": 51,
+  "successful": true
+}
+
+CURRENT reports/revision_audit/portable_reproduction.json
+{
+  "python": "3.10.0",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "runtime_dependencies": "Python standard library",
+  "fresh_independent_code_and_input_copies": true,
+  "preexisting_outputs_or_cache_copied": false,
+  "hardlinks_used": false,
+  "run_output_sha256": [
+    {
+      "hub_nodes.csv": "f8efe4df66a48d4b5ad6436bf7fea0b3c6e40fc569acad76c30c0c7bebfd048c",
+      "injected_edges.jsonl": "71d15b494690ff327dec31570a36764e5567bc59d140b5483f32034aea75b398",
+      "injection_manifest.json": "847e8049936f47a8e6dae86df2c257c7768e478baf8a92dae88b01e27b5da799",
+      "pat_kg_poisoned_10pct.json": "7abb46ca160a7fe0b300653cc0a8c8221e6e728af25971c14b2f18f11b7f5707"
+    },
+    {
+      "hub_nodes.csv": "f8efe4df66a48d4b5ad6436bf7fea0b3c6e40fc569acad76c30c0c7bebfd048c",
+      "injected_edges.jsonl": "71d15b494690ff327dec31570a36764e5567bc59d140b5483f32034aea75b398",
+      "injection_manifest.json": "847e8049936f47a8e6dae86df2c257c7768e478baf8a92dae88b01e27b5da799",
+      "pat_kg_poisoned_10pct.json": "7abb46ca160a7fe0b300653cc0a8c8221e6e728af25971c14b2f18f11b7f5707"
+    }
+  ],
+  "canonical_output_sha256": {
+    "hub_nodes.csv": "f8efe4df66a48d4b5ad6436bf7fea0b3c6e40fc569acad76c30c0c7bebfd048c",
+    "injected_edges.jsonl": "71d15b494690ff327dec31570a36764e5567bc59d140b5483f32034aea75b398",
+    "injection_manifest.json": "847e8049936f47a8e6dae86df2c257c7768e478baf8a92dae88b01e27b5da799",
+    "pat_kg_poisoned_10pct.json": "7abb46ca160a7fe0b300653cc0a8c8221e6e728af25971c14b2f18f11b7f5707"
+  },
+  "two_clean_runs_byte_identical": true,
+  "clean_run_matches_delivered_outputs": true,
+  "run_logs": [
+    {
+      "command": [
+        "python",
+        "run_task1.py",
+        "--graph",
+        "<supplied-inputs>/pat_kg_merged.json",
+        "--entities",
+        "<supplied-inputs>/entity_id_value_type.csv",
+        "--work-dir",
+        "<new-run-0>",
+        "--seed",
+        "42"
+      ],
+      "exit_code": 0,
+      "stdout": "{\n  \"status\": \"PASS\",\n  \"nodes\": 7868,\n  \"original_edges\": 7737,\n  \"injected_edges\": 774,\n  \"total_edges\": 8511,\n  \"candidates\": 9853,\n  \"expansion_rounds\": 0,\n  \"checks_passed\": 31\n}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python",
+        "run_task1.py",
+        "--graph",
+        "<supplied-inputs>/pat_kg_merged.json",
+        "--entities",
+        "<supplied-inputs>/entity_id_value_type.csv",
+        "--work-dir",
+        "<new-run-1>",
+        "--seed",
+        "42"
+      ],
+      "exit_code": 0,
+      "stdout": "{\n  \"status\": \"PASS\",\n  \"nodes\": 7868,\n  \"original_edges\": 7737,\n  \"injected_edges\": 774,\n  \"total_edges\": 8511,\n  \"candidates\": 9853,\n  \"expansion_rounds\": 0,\n  \"checks_passed\": 31\n}\n",
+      "stderr": ""
+    }
+  ],
+  "tests_exit_code": 0,
+  "tests_stdout": "test_absence_and_alternative_object_are_not_false (tests.test_factual_v2.FactualVerificationTests) ... ok\ntest_annotation_roundtrip_is_deterministic_and_preserves_provenance (tests.test_factual_v2.FactualVerificationTests) ... ok\ntest_conflicting_reviewed_sources_remain_unresolved (tests.test_factual_v2.FactualVerificationTests) ... ok\ntest_direct_contradiction_requires_reviewed_matching_scope (tests.test_factual_v2.FactualVerificationTests) ... ok\ntest_independently_reviewed_direct_positive_can_support_true (tests.test_factual_v2.FactualVerificationTests) ... ok\ntest_local_annotation_match_is_recorded_separately_from_historical_truth (tests.test_factual_v2.FactualVerificationTests) ... ok\ntest_unreviewed_model_output_and_raw_statement_are_not_ground_truth (tests.test_factual_v2.FactualVerificationTests) ... ok\ntest_wrong_triple_and_missing_scope_remain_unresolved (tests.test_factual_v2.FactualVerificationTests) ... ok\ntest_flags_unknown_ineligible_and_isolated_excluded (tests.test_hub_selection.HubSelectionTests) ... ok\ntest_k_formula_and_expansion (tests.test_hub_selection.HubSelectionTests) ... ok\ntest_lexical_ties_per_type (tests.test_hub_selection.HubSelectionTests) ... ok\ntest_multirelational_degree_self_loop (tests.test_hub_selection.HubSelectionTests) ... ok\ntest_both_positions_consistent_and_direction_preserved (tests.test_injection.InjectionTests) ... ok\ntest_budget_exact_decimal_half_even (tests.test_injection.InjectionTests) ... ok\ntest_candidate_decisions_partition_all_pair_edge_attempts (tests.test_injection.InjectionTests) ... ok\ntest_donor_relation_role_evidence_required (tests.test_injection.InjectionTests) ... ok\ntest_independent_validator_detects_altered_provenance (tests.test_injection.InjectionTests) ... ok\ntest_positive_qa_triple_original_and_duplicate_exclusion (tests.test_injection.InjectionTests) ... ok\ntest_qa_multiple_intermediates_no_false_second_hop_pairing (tests.test_injection.InjectionTests) ... ok\ntest_quality_flags_and_cross_type_hubs_rejected (tests.test_injection.InjectionTests) ... ok\ntest_sampler_exhausted_small_buckets_do_not_starve_large_type (tests.test_injection.InjectionTests) ... ok\ntest_zero_budget_is_empty_and_deterministic (tests.test_injection.InjectionTests) ... ok\ntest_complete_audit_and_known_annotation_duplicates (tests.test_original_audit.OriginalAuditTests) ... ok\ntest_csv_type_disagreement_is_error (tests.test_original_audit.OriginalAuditTests) ... ok\ntest_dangling_edge_endpoint_is_error (tests.test_original_audit.OriginalAuditTests) ... ok\ntest_duplicate_original_triple_is_error (tests.test_original_audit.OriginalAuditTests) ... ok\ntest_wrong_qa_hop_reference_is_error (tests.test_original_audit.OriginalAuditTests) ... ok\ntest_chart_audit_rejects_wrong_count (tests.test_portable_v2.PortableTests) ... ok\ntest_package_omits_credentials_and_caches_but_hashes_inputs (tests.test_portable_v2.PortableTests) ... ok\ntest_actual_dataset_counts (tests.test_reproducibility.ActualDatasetIntegrationTests) ... ok\ntest_alternative_seed_changes_valid_selection (tests.test_reproducibility.ActualDatasetIntegrationTests) ... ok\ntest_inputs_untouched_after_repeated_runs (tests.test_reproducibility.ActualDatasetIntegrationTests) ... ok\ntest_same_seed_all_outputs_identical_bytes (tests.test_reproducibility.ActualDatasetIntegrationTests) ... ok\ntest_serialized_preservation_of_every_original_object (tests.test_reproducibility.ActualDatasetIntegrationTests) ... ok\ntest_all_three_snapshots_activate_only_missing_observations (tests.test_revision_schema.RevisionSchemaTests) ... ok\ntest_every_accepted_candidate_has_a_changed_position (tests.test_revision_schema.RevisionSchemaTests) ... ok\ntest_fake_labels_edges_and_separate_unresolved_truth (tests.test_revision_schema.RevisionSchemaTests) ... ok\ntest_label_tamper_is_rejected (tests.test_revision_schema.RevisionSchemaTests) ... ok\ntest_missing_overlay_activation_fails (tests.test_revision_schema.RevisionSchemaTests) ... ok\ntest_presort_is_needed_for_input_order_independent_seed (tests.test_revision_schema.RevisionSchemaTests) ... ok\ntest_randomized_pairs_preserve_identity_and_renderability (tests.test_revision_schema.RevisionSchemaTests) ... ok\ntest_unsupported_factual_truth_tamper_is_rejected (tests.test_revision_schema.RevisionSchemaTests) ... ok\ntest_full_expansion_reports_maximum_without_fabricating_edges (tests.test_shortfall.ShortfallTests) ... ok\ntest_baseline_seed_constraints_and_forbidden (tests.test_structure_v2.StructuralTests) ... ok\ntest_degree_bins (tests.test_structure_v2.StructuralTests) ... ok\ntest_projection_clustering_and_directional_degree (tests.test_structure_v2.StructuralTests) ... ok\ntest_reject_unsupported_both_position_stratum (tests.test_structure_v2.StructuralTests) ... ok\ntest_tested_edge_is_excluded (tests.test_structure_v2.StructuralTests) ... ok\ntest_original_objects_and_metadata_untouched (tests.test_temporal_semantics.TemporalTests) ... ok\ntest_source_snapshots_and_qa_derivation_only (tests.test_temporal_semantics.TemporalTests) ... ok\ntest_validation_rejects_false_qa_support_and_invented_validity (tests.test_temporal_semantics.TemporalTests) ... ok\n\n----------------------------------------------------------------------\nRan 51 tests in 13.831s\n\nOK\n\n{\"tests_run\": 51, \"failures\": 0, \"errors\": 0, \"skipped\": 0, \"passed\": 51, \"successful\": true}\n",
+  "tests_stderr": ""
+}
+
+CURRENT outputs/injection_manifest.json
+{
+  "actual_injected_edges": 774,
+  "all_original_qa_positive_triples_checked": 7738,
+  "candidate_count": 9853,
+  "configuration": {
+    "compatibility": "original_directed_relation_role_and_counterpart_general_type",
+    "hub_metric": "total_degree",
+    "injection_ratio": "0.10",
+    "permutation_scope": "each_candidate_uses_one_pair_local_transposition_on_both_endpoints",
+    "rounding": "decimal_exact_round_half_even",
+    "sampling": "round_robin_type_then_relation_seeded_within_buckets",
+    "seed": 42,
+    "top_k_max": 20
+  },
+  "eligible_counts": {
+    "AdministrativeArea": 339,
+    "Brand": 2,
+    "Building": 25,
+    "CentralBank": 6,
+    "CityTown": 583,
+    "Company": 140,
+    "Concept": 2,
+    "Country": 73,
+    "CreativeWork": 4,
+    "CulturalInstitution": 14,
+    "CulturalOrganization": 5,
+    "EducationalInstitution": 76,
+    "Event": 1,
+    "Facility": 7,
+    "Family": 1,
+    "GeographicLocation": 2,
+    "GovernmentOrganization": 83,
+    "HigherEducationInstitution": 102,
+    "MediaOrganization": 49,
+    "Occupation": 1,
+    "Organization": 122,
+    "Person": 3719,
+    "PoliticalParty": 167,
+    "Position": 227,
+    "ReligiousOrganization": 5,
+    "ResearchInstitution": 34,
+    "Road": 2,
+    "School": 163,
+    "ScientificInstrument": 1,
+    "SportsOrganization": 39,
+    "SportsTeam": 807,
+    "SportsVenue": 338,
+    "University": 506,
+    "Vehicle": 1
+  },
+  "expansion_history": [
+    {
+      "diagnostics": {
+        "accepted_unique": 9853,
+        "attempted": 15526,
+        "rejected_by_reason": {
+          "duplicate": 752,
+          "missing_source_donor_evidence": 2883,
+          "missing_target_donor_evidence": 1878,
+          "original_triple": 154,
+          "self_loop": 6
+        }
+      },
+      "k_by_type": {
+        "AdministrativeArea": 17,
+        "Brand": 2,
+        "Building": 2,
+        "CentralBank": 2,
+        "CityTown": 20,
+        "Company": 7,
+        "Concept": 2,
+        "Country": 4,
+        "CreativeWork": 2,
+        "CulturalInstitution": 2,
+        "CulturalOrganization": 2,
+        "EducationalInstitution": 4,
+        "Event": 0,
+        "Facility": 2,
+        "Family": 0,
+        "GeographicLocation": 2,
+        "GovernmentOrganization": 5,
+        "HigherEducationInstitution": 6,
+        "MediaOrganization": 3,
+        "Occupation": 0,
+        "Organization": 7,
+        "Person": 20,
+        "PoliticalParty": 9,
+        "Position": 12,
+        "ReligiousOrganization": 2,
+        "ResearchInstitution": 2,
+        "Road": 2,
+        "School": 9,
+        "ScientificInstrument": 0,
+        "SportsOrganization": 2,
+        "SportsTeam": 20,
+        "SportsVenue": 17,
+        "University": 20,
+        "Vehicle": 0
+      },
+      "unique_candidates": 9853
+    }
+  ],
+  "factual_verification": {
+    "unverified": 774,
+    "verified_false": 0
+  },
+  "factual_verification_v2": {
+    "unresolved": 774,
+    "verified_false": 0,
+    "verified_true": 0
+  },
+  "initial_k_max_is_soft_expansion_limit": true,
+  "input_sha256": {
+    "entity_csv": "c653dde9d87f61295dac67aac1151d5510c7d6b9c0081ada82b31ea1f053be2e",
+    "graph": "f5a1c2f4b556bf060e89540ab1b5c05f836afe29cc0f13cdcd80f92120171f31"
+  },
+  "k_by_type": {
+    "AdministrativeArea": 17,
+    "Brand": 2,
+    "Building": 2,
+    "CentralBank": 2,
+    "CityTown": 20,
+    "Company": 7,
+    "Concept": 2,
+    "Country": 4,
+    "CreativeWork": 2,
+    "CulturalInstitution": 2,
+    "CulturalOrganization": 2,
+    "EducationalInstitution": 4,
+    "Event": 0,
+    "Facility": 2,
+    "Family": 0,
+    "GeographicLocation": 2,
+    "GovernmentOrganization": 5,
+    "HigherEducationInstitution": 6,
+    "MediaOrganization": 3,
+    "Occupation": 0,
+    "Organization": 7,
+    "Person": 20,
+    "PoliticalParty": 9,
+    "Position": 12,
+    "ReligiousOrganization": 2,
+    "ResearchInstitution": 2,
+    "Road": 2,
+    "School": 9,
+    "ScientificInstrument": 0,
+    "SportsOrganization": 2,
+    "SportsTeam": 20,
+    "SportsVenue": 17,
+    "University": 20,
+    "Vehicle": 0
+  },
+  "original_unique_edges": 7737,
+  "output_sha256": {
+    "hub_nodes.csv": "f8efe4df66a48d4b5ad6436bf7fea0b3c6e40fc569acad76c30c0c7bebfd048c",
+    "injected_edges.jsonl": "71d15b494690ff327dec31570a36764e5567bc59d140b5483f32034aea75b398",
+    "pat_kg_poisoned_10pct.json": "7abb46ca160a7fe0b300653cc0a8c8221e6e728af25971c14b2f18f11b7f5707"
+  },
+  "qa_check_limit": "No second-hop cross-product inference for multiple intermediates; not a factual truth oracle.",
+  "release_schema_version": "2.0",
+  "shortfall_reason": null,
+  "source_code_sha256": {
+    "config/task1_config.json": "1227f968b2fd16a87e46e23cc608cb3df91c9dc1da98c7c8a5239fcc58b33e00",
+    "requirements.txt": "25a7bb5e5355f39d35ec8d29296c0d2178a49306e47edfd9a37eb99ab430d3ee",
+    "run_task1.py": "688a51b6ffde7daca9134a3a16c49a956c39acdf8f59ed07118620b8066aa52b",
+    "run_tests.py": "97330c7f4756c1aadc88c87d295901f999b2ea2e0ad3d160f1c99577111c7323",
+    "src/__init__.py": "5b93aab02777d7db4d80e2039884bc4a53cb46e0184d19330f9e69cea9262781",
+    "src/compute_degrees.py": "66abe83f45b0d1bd383601e9af2a51d89968d85cf9d4f5cb8120a9acd40b9dde",
+    "src/factual_verification.py": "bc89dd686f3392a733a2f39281099463ec341ffbc2e7887d0ae1656f297041a2",
+    "src/generate_candidates.py": "3cefefbaaa8a1a91ebd6f2b1ff11d4e6fb75249349f94ee819c651ede65b75dd",
+    "src/inject_misinformation.py": "6c0ed912cbb1adcbb6f7df7aa6b1b4fbb6458cc25b960437b94962e82d4c14fe",
+    "src/load_data.py": "1326bbf58a2b794d78a0c741ed0ba86dd60eba0234b8631f8960560ca26b1864",
+    "src/report_statistics.py": "8ae425953400d5a624a37921c6e2d27acb6cbbd806e8e06a7a3b4c3034bb80a6",
+    "src/select_hubs.py": "42bcc4ac208a39a5a0ecc212943706eb80439dc10c343114b044e009cef6aea7",
+    "src/snapshot_visibility.py": "8b3eafe141aa5e03d76ec9a15e0e6e5097d0de72584a1fdf0e508fdba02ca73e",
+    "src/validate_original.py": "20be57866073fcb5fb30e742992a9507ed1b8e0edf7d2a531aad7fed5c4468fc",
+    "src/validate_poisoned.py": "5cf0b49c81f3cf20f28e2bbe23b60944fec49ad58eb4dc9f977f4175038db05e",
+    "tests/__init__.py": "f3bc078ebe468422007fc5cdef31b8d2cd627b6acca817fde98102bacf4e836e",
+    "tests/helpers.py": "f68d67dc47d2f3fee4ea7568382f3aa868da47e4f5e9254fc7ea206dbb21f176",
+    "tests/test_factual_v2.py": "5ade2e7b7aac0fb394854fdc56bf288745373ed2afefcb9164c109de39c9ffde",
+    "tests/test_hub_selection.py": "dbfd954af922aad1ae401e2793ebefb69be09a259e8c94e2d5078a640ec70fd4",
+    "tests/test_injection.py": "6959c1ac0968ddf6ceb9717d3c645b3e96faff386c7a56703db73883877f0e94",
+    "tests/test_original_audit.py": "e8e3c5f5562546599731260b9bfcabd9a76911fc0174c1d6c54612b821c5ae2b",
+    "tests/test_portable_v2.py": "7a14b62744d52098e621f6f0e8794cdad8e555911f0a324400ba1c1de4e7fbe8",
+    "tests/test_reproducibility.py": "ffa3f10265ed9f3ae076fa5f560c99008695232a7f6c233ef98038b602d2c269",
+    "tests/test_revision_schema.py": "0f3e26b67d9c3e3a6359cb3e90da5dffaf2279c39ff512d9ced706e966306dd0",
+    "tests/test_shortfall.py": "9e4e95e50fbcc7bf46673489652bd38d776a299a9fc48c1e8f3f84eb6af2ef1c",
+    "tests/test_structure_v2.py": "5d8f11df7095ff346a90fa4d4f134a4866222c6008b39b56059c720c5c94f1d1",
+    "tests/test_temporal_semantics.py": "a9be8d4855e559e034cc3eaa74b02ee96f1d010391798ca658238445d0ad08c5",
+    "tools/analyze_structure_v2.py": "584bbe1f345dcacdc55ef2b65b2181fe9a48e2be2d0afcb33753cef9212a19e5",
+    "tools/audit_facts_v2.py": "32a18612847fd0932a8f3cf6cd0edf33a4a2924a0e1e89bb0948c8c23f8c07d8",
+    "tools/audit_visuals_v2.py": "9a633b13e40a8fb9f774d09e9b12ad9aedfe6effa8d0c3f6a7de92d7fcd420bc",
+    "tools/build_handoff.py": "62dfbbec80a6127fe8aadba14f4c46c34b41e365d8ec38698bdd304338d67303",
+    "tools/build_handoff_v2.py": "ecca56aec6f35836820dd5439d77172ce2a606f729509f9468a28fa7f2062e37",
+    "tools/discover_models_v2.py": "83e87bf8576d091cbdb71f21f1e0697d488982d74ca19d7a673e9ef5dfa34bd8",
+    "tools/export_snapshot_v2.py": "dbd5f490ef985e488b021a76ab7fa1f7934128e957fb97bd23eb64ec102ce2c2",
+    "tools/opencode_task_worker.py": "df088ef4224987f3e5a5b43f5d3f3134fa6dbbf11ae3c39b38511fb27424efb3",
+    "tools/package_release_v2.py": "c90a1575c81153ef44b1b99c26cf9c60abd103ca109c47d758b942f695127048",
+    "tools/review_v2.py": "0c6073ba21af782c462f5afd8ce7273c66a8a89ac7080f4ad29b21a80673e9ec",
+    "tools/run_opencode_reviews.py": "c337cf54021bb61d0b90582becd31455271ac403cddc3386c89eb77905b63350",
+    "tools/verify_delivery.py": "4018011610902a0c093c62347fe714c4b9aeceeafa640614d3e0bd459c3c89e2"
+  },
+  "status": "PASS",
+  "synthetic_class_counts": {
+    "fake": 774
+  },
+  "target_injected_edges": 774
+}
+
+CURRENT reports/FINAL_REPORT_v2.md
+# Task 1 revised release v2
+
+## Executive result and preserved baseline
+
+The existing implementation was revised in place after an independent byte-copy backup at `D:\学习\KBS_project\new_KG\releases\baseline_v1_20261016T103451+0900`. Original input files and the prior parent ZIP were preserved. The final graph at `../pat_kg_poisoned_10pct.json` is an ordinary independent copy matching outputs; no Windows hard link is needed.
+
+Independent recomputation confirms 7,868 nodes, 7,737 original edges, 774 additions, 8,511 total edges, 18,436 QA, 496 unresolved paths, 206 selected hubs and 9,853 eligible unique candidates. Every original object, edge ordering, QA/evidence/temporal assignment and source metadata remains unchanged. Every pre-existing injected triple and provenance field also remains identical. Input hashes are in revision_audit/original_file_hashes.json; independent hub ranking and all-pair candidate counts are independently recorded.
+
+## Synthetic annotation and factual verification
+
+All 774 synthetic edges now carry `value: "fake"`; no original edge or real Wikidata node is relabeled. fake denotes synthetic construction, **not proven factual falsity**. Separate factual_verification.status is unresolved; legacy provenance unverified is retained unchanged. The canonical pipeline generates the labels and the validator checks serialized output.
+
+All 774 exact claims were compared with original KG/PAT positive annotations, finding no identical positive. Four actual HTTP-200 Wikidata requests retrieved 40 subjects, covering all 18 relations and 86/774 claims (11.1%). The purposive sample is not statistical coverage; 688 claims have no external statement lookup. Raw statements, qualifiers, references, URLs, timestamps and hashes are cached. No identical current claim was found in that sample. Missing or different objects are not falsity proofs, especially for multivalued/time-dependent relations. Current statements cannot establish historical snapshot truth. Result: **0 verified_false, 0 verified_true, 774 unresolved**. No verified misinformation subset or unsupported replacement is claimed.
+
+Canonical generation remains offline and deterministic. The factual-layer API supports explicit reviewed evidence; its legacy fields remain immutable. An executed tampering test demonstrated that a bogus verified_false label with a nonempty citation was previously accepted. The validator now rederives annotations under the same explicit evidence context and rejects that mutation. Model assessments never supply factual ground truth.
+
+## Snapshot visibility repair
+
+Baseline audit confirmed 38 distinct injected edges with an originally unobserved endpoint in at least one snapshot: 19/6/19 edge-snapshot cases for Dec2021/Dec2023/March2024. Visible injected-edge counts remain 642/649/609. Added namespaced overlay lists activate 6/1/4 real QIDs, respectively. Original observed_in_snapshots arrays are unchanged. Synthetic activation is not an invented original observation, fake node or historical validity interval.
+
+The non-mutating snapshot adapter distinguishes original observation, real-node overlay activation and synthetic edge styling. All three actual CLI exports and automated tests have zero non-renderable visible endpoints under that explicit policy. The original-observation mismatch is deliberately retained, not reinterpreted as repaired historical evidence. Per-snapshot counts overlap and must not be summed as distinct graph edges.
+
+## Pair-local method and structural support
+
+Configuration and pair-local method were retained: ratio .10, seed42, initial topK20, original total-degree ranking, same-type eligible donors and directed relation-role evidence. Both positions use a fixed pair's transposition; different candidates may use overlapping pairs. **Pair-local additive graph injection != global graph rewiring**. This is not exact LogicPoison reproduction. No Task 2, training or KGQA efficacy experiment was run.
+
+Ten random seeds each generated 774 legal diagnostic edges matching source edge, type, relation, changed position and snapshots. Replacement original-degree bins all matched without fallback, but exact degree did not: endpoint means Hub 4.58204 versus random 4.40795. Actual changes are source-only388, target-only386, two-position0; all 774 entered each baseline, with no hidden filtering.
+
+Clustering/common-neighbor/component/path metrics use an explicitly simple undirected projection and do not verify a directed relation. Original common-neighbor means are both .001292; original same-component proportions .58010 versus .58295, so original-topology support is not uniformly stronger. Augmented alternative-path proportions are .998708 versus .926873 after excluding the tested triple, but paths may use other synthetic edges. Augmented common-neighbor means .042636 versus .028682. Hub leaves764 components versus random701.9 (808 originally); average global local clustering decreases. These are mixed descriptive results, not causal hub advantages or attack success. Reported intervals concern Monte Carlo variation of ten random-baseline means, not factual confidence or downstream effects.
+
+## Figures and standalone reproducibility
+
+Both delivered SVGs were actually rendered and viewed before/after. Eighteen relation and23 type categories independently total774; every count, bar width and text boundary was checked. Captions now distinguish synthetic injection from verified falsity. The parent HTML explorer embeds only the original graph; no synthetic styling is claimed for it. The documented adapter is the v2 consumer interface.
+
+Final suite: **51/51 passed**, no failures/errors/skips. An isolated independent copy of code and actual supplied inputs regenerated from absent output directories twice; all four output files match delivery, and the copied full suite passed. Separate integration tests run seeds42,42,43 under python -E -S. Python3.10.0/stdlib is the verified generation environment; browser tooling is optional for figure audits. Exact cross-version shuffle bytes are not promised. Portable ZIP omits original datasets with complete filename/size/SHA-256 input manifest; explicit input paths require no hardlink, API key or stale cache. See REPRODUCTION_v2.md and REPRODUCTION_v2_CN.md.
+
+## Adversarial multi-model review
+
+Models/families: deepseek-v4-pro, glm-5.3, qwen3.8-max, gemini-4-argon-contributor. Substantive rounds: 1; consensus: PARTIAL/pending. Actual requests, responses, IDs, timestamps, usage and failures are preserved. Gemini received actual PNG bytes through the documented OpenCode Go Google route after chat-protocol rejection. Other initial requests exhausted reasoning or timed out; model-specific controls were checked in primary documentation and used in recorded retries. No provider fallback or key copying occurred. Text reviewers never claimed local execution or image inspection.
+
+Findings were reconciled with actual code and counterexamples. Source hashes now cover runtime, tests, tools, entry scripts, configuration and requirements. Removing pre-shuffle sorting was rejected by an executed input-order counterexample. A supposed two-position diagnostic mismatch was rejected by the actual388/386/0 distribution. The alleged anomalous October date was rejected against the client date2026-10-16. All reviewer findings, including false positives and editorial limitations, remain in findings_registry.json and final_adjudication.md. External facts were not decided by vote.
+
+## Reproduction, inventory and limitations
+
+Core outputs: outputs/pat_kg_poisoned_10pct.json, injected_edges.jsonl, injection_manifest.json, hub_nodes.csv. Code/tests/config: src/, tests/, tools/, run_task1.py, run_tests.py. Reports: revision_audit/ (baseline, independent reconciliation/candidate count, factual CSV/cache, structural metrics, actual renders/visual audits, snapshot CLI, portable reproduction), multi_model_review/, tests.log, validation_results.json, final_verification.json, bilingual reproduction and CHANGELOG_v2.md. The original v1 report remains in the independent backup.
+
+Input graph SHA-256 `f5a1c2f4b556bf060e89540ab1b5c05f836afe29cc0f13cdcd80f92120171f31`; CSV `c653dde9d87f61295dac67aac1151d5510c7d6b9c0081ada82b31ea1f053be2e`. Final graph SHA-256 `7abb46ca160a7fe0b300653cc0a8c8221e6e728af25971c14b2f18f11b7f5707`. All unresolved claims and methodological limits are explicit above. Main steps: run_task1.py with --graph/--entities; run_tests.py with PAT_KG_INPUT_DIR; audit_facts_v2.py; analyze_structure_v2.py; package_release_v2.py --check-clean; verify_delivery.py; build_handoff_v2.py. Exact commands and package extraction are in the bilingual reproduction documents.
+
+```text
+TASK 1 REVISED STATUS: PARTIAL
+Original nodes preserved: YES
+Original edges preserved: YES
+Injected edge count: 774
+Total edge count: 8511
+Injected edges labeled value=fake: 774
+Original nodes incorrectly labeled fake: 0
+Verified false statements: 0
+Verified true statements: 0
+Unresolved factual statuses: 774
+Snapshot visibility violations: 0 under explicit overlay adapter
+Structural-support analysis completed: YES
+Visualization review completed: YES
+Automated tests passed: 51 / 51
+Distinct OpenCode model families used: 4
+Adversarial review rounds: 1
+Multi-model consensus: PARTIAL
+Remaining blocking issues: see current review/portability evidence
+Remaining methodological limitations: 774 factual claims unresolved; purposive external coverage 86/774; undirected structural proxies; conditional degree-bin baseline; offline merged snapshots; no downstream efficacy evaluation.
+```

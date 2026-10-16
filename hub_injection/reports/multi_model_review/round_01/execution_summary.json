@@ -1,0 +1,34 @@
+[
+  {
+    "role": "D",
+    "requested_model": "gemini-4-argon-contributor",
+    "http_status": 400,
+    "ok": false,
+    "returncode": 1,
+    "error": "HTTP 400: {\"type\":\"error\",\"error\":{\"type\":\"ModelProtocolUnsupported\",\"message\":\"Model does not support this protocol.\"}}"
+  },
+  {
+    "role": "A",
+    "requested_model": "deepseek-v4-pro",
+    "http_status": 200,
+    "ok": false,
+    "returncode": 1,
+    "error": "ValueError: No usable final text returned"
+  },
+  {
+    "role": "B",
+    "requested_model": "glm-5.3",
+    "http_status": 200,
+    "ok": false,
+    "returncode": 1,
+    "error": "ValueError: No usable final text returned"
+  },
+  {
+    "role": "C",
+    "requested_model": "qwen3.8-max",
+    "http_status": null,
+    "ok": false,
+    "returncode": 1,
+    "error": "TimeoutError: The read operation timed out"
+  }
+]

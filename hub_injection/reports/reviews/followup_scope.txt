@@ -1,0 +1,18 @@
+Please independently verify the code and tests, then issue a corrected final verdict. Do not defer to the coordinator: any remaining real defect should be supported by a concrete counterexample. Distinguish requested dataset construction from exact LogicPoison reproduction.
+
+Exact source-task wording:
+"For a pair of hubs, implement a deterministic pairwise permutation of their entity positions. Ensure the transformation is consistent when both endpoints belong to the selected swapping pool."
+"This is an additive adaptation of LogicPoison-style entity swapping; do not present it as an exact reproduction of the original paper."
+"Build candidate injected triples using the selected hub pairs."
+The task never requires disjoint pairs, a global fixed permutation, all incident transformed edges to be accepted, or degree preservation. We explicitly choose per-candidate pairwise transpositions; for each fixed pair the mapping is identical on all incident edges, including both endpoints. Candidate filtering and budgeted sampling do not imply a global bijection. Does this fulfill the exact stated scope if this boundary is explicit? A stronger fixed-permutation experiment remains a possible future variant, not an implemented claim.
+
+Recheck alleged software defects against exact code:
+- expand_k contains min(len(group), max(k+1,2*k)); it cannot exceed group size. For k>=2, max(k+1,2*k)==2*k, so deleting max changes nothing. Expansion past top_k_max is intentionally documented as exceeding the initial soft cap.
+- candidates are deduplicated by (source,relation,target) before sorting. These triples are the first three sort fields, so two candidates cannot tie. Traversal is sorted by type/pair/incident edge index; provenance selection is deterministic for the same input.
+- any original-triple injection duplicates an already-preserved prefix edge and fails unique_augmented_triples. An explicit no_original_triples check has now also been added.
+- validate_poisoned raises immediately on every failed check. Overwriting the first successful result cannot hide a failure. A direct serialized == generated structural comparison is now also enforced.
+- manifest write occurs after serialized validation and input checksum checks in the supplied run_task1.py. Verify actual order instead of relying on guessed line numbers.
+- balanced_sample continues to scan all relations, so any nonempty bucket makes progress; with count<=candidate_count it cannot underfill. A new adversarial test empties a one-element type and samples all 40 candidates from a much larger type; another checks maximum exhaustion.
+- independent rederivation of relation-role signatures in validator is intentional rather than reusing generator state; measured end-to-end CLI runtime is a few seconds, so caching is not a correctness requirement.
+
+Added tests cover complete tiny-graph candidate exhaustion after expansion and a documented PARTIAL result without fabricating edges, candidate decision accounting, and same-seed reports as well as outputs. The actual real-data pipeline and full tests were rerun after changes. Please assess remaining defects and accurately downgrade or withdraw findings not supported by a counterexample.

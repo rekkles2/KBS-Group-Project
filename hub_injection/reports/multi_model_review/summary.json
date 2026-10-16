@@ -1,0 +1,79 @@
+{
+  "consensus": true,
+  "families_used": [
+    "deepseek-v4-pro",
+    "glm-5.3",
+    "qwen3.8-max",
+    "gemini-4-argon-contributor"
+  ],
+  "rounds_completed": 4,
+  "initial_independence": true,
+  "consensus_does_not_establish_factual_truth": true,
+  "criteria": [
+    {
+      "role": "A",
+      "actual_model": "deepseek-v4-pro",
+      "final_verdict": "PASS",
+      "original_preservation": "PASS supplied+local evidence",
+      "synthetic_edge_labels": "PASS774",
+      "node_identity_labels": "PASS all0",
+      "node_participation_labels": "PASS654",
+      "snapshot_overlay": "PASS",
+      "factual_honesty": "PASS unresolved",
+      "method_scope": "PASS pair-local additive",
+      "blocking": "NONE",
+      "supported_major": "NONE",
+      "images_received": 0,
+      "last_round": 4
+    },
+    {
+      "role": "B",
+      "actual_model": "glm-5.3",
+      "final_verdict": "PASS",
+      "original_preservation": "PASS supplied+local evidence",
+      "synthetic_edge_labels": "PASS774",
+      "node_identity_labels": "PASS all0",
+      "node_participation_labels": "PASS654",
+      "snapshot_overlay": "PASS",
+      "factual_honesty": "PASS unresolved",
+      "method_scope": "PASS pair-local additive",
+      "blocking": "NONE",
+      "supported_major": "NONE",
+      "images_received": 0,
+      "last_round": 4
+    },
+    {
+      "role": "C",
+      "actual_model": "qwen3.8-max",
+      "final_verdict": "PASS",
+      "original_preservation": "PASS supplied+local evidence",
+      "synthetic_edge_labels": "PASS774",
+      "node_identity_labels": "PASS all0",
+      "node_participation_labels": "PASS654",
+      "snapshot_overlay": "PASS",
+      "factual_honesty": "PASS unresolved",
+      "method_scope": "PASS pair-local additive",
+      "blocking": "NONE",
+      "supported_major": "NONE",
+      "images_received": 0,
+      "last_round": 4
+    },
+    {
+      "role": "D",
+      "actual_model": "gemini-4-argon-contributor",
+      "final_verdict": "PASS",
+      "original_preservation": "PASS supplied+local evidence",
+      "synthetic_edge_labels": "PASS774",
+      "node_identity_labels": "PASS all0",
+      "node_participation_labels": "PASS654",
+      "snapshot_overlay": "PASS",
+      "factual_honesty": "PASS unresolved",
+      "method_scope": "PASS pair-local additive",
+      "blocking": "NONE",
+      "supported_major": "NONE",
+      "images_received": 2,
+      "last_round": 4
+    }
+  ],
+  "scope": "Revised Task1 including latest requested canonical node/edge construction labels"
+}

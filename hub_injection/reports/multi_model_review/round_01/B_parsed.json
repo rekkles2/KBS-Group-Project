@@ -1,0 +1,73 @@
+{
+  "reviewer_model": "glm-5.3",
+  "overall_verdict": "PASS",
+  "blocking_findings": [],
+  "major_findings": [],
+  "minor_findings": [
+    {
+      "file": "reports/revision_audit/factual_verification_summary.md",
+      "function_or_field": "externally_covered_edges",
+      "record_or_line": "16, 18-19",
+      "problem": "Current Wikidata external coverage is only 86 of 774 injected edges (11.1%), from a purposive 40-subject sample; 688 edges have no external evidence check at all.",
+      "concrete_evidence_or_counterexample": "'externally_covered_edges': 86, 'retrieved_subjects': 40, 'selected_subjects': 40; 774-86=688 edges lack any current-statement coverage.",
+      "severity": "minor",
+      "repair_or_test": "The report honestly labels this as purposive and non-statistical, and correctly refuses truth conclusions; optionally widen the subject sample or state the 11.1% fraction explicitly in README."
+    },
+    {
+      "file": "README.md",
+      "function_or_field": "Revised diagnostics / delivery references",
+      "record_or_line": "39, 43, 3",
+      "problem": "Files referenced as evidence (tools/audit_facts_v2.py, tools/audit_visuals_v2.py rendering audit, reports/FINAL_REPORT_v2.md, REPRODUCTION_v2.md, CN report, and the 'actual before/after rendered inspection' of the two SVGs) are not present in the supplied material; only audit_visuals_v2.audit_chart is indirectly evidenced via tests/test_portable_v2.py.",
+      "concrete_evidence_or_counterexample": "tests/test_portable_v2.py line 9 imports tools.audit_visuals_v2.audit_chart, proving the module exists, but no supplied file substantiates a rendered (visual) inspection or the final-report contents.",
+      "severity": "minor",
+      "repair_or_test": "Ship the referenced reports and audit_facts_v2.py in the review bundle, or reword the 'rendered inspection' claim as a self-reported manual step."
+    },
+    {
+      "file": "README.md",
+      "function_or_field": "default graph filename",
+      "record_or_line": "17",
+      "problem": "outputs/pat_kg_poisoned_10pct.json is a fixed filename; a run with a different ratio overwrites/reuses the 10pct-named file, a mild misleading-artifact risk.",
+      "concrete_evidence_or_counterexample": "run_task1.py line 81 always writes 'pat_kg_poisoned_10pct.json' regardless of --injection-ratio.",
+      "severity": "minor",
+      "repair_or_test": "README already flags the fixed name; consider including the ratio in injection_manifest-driven naming or refusing a non-default ratio under this filename."
+    }
+  ],
+  "verified_checks": [
+    "Fake is explicitly a synthetic class label, not falsity: augment_graph metadata ('synthetic_class_semantics'), validate_poisoned 'explicit_synthetic_identity' check, snapshot_view legend, and tests/test_revision_schema.test_fake_labels_edges_and_separate_unresolved_truth all separate value=='fake' from factual_verification.status=='unresolved'. No real node or original edge receives the label.",
+    "Legacy 'unverified' provenance status is retained alongside the new separate unresolved factual_verification object; both appear consistently in the manifest ('factual_verification' and 'factual_verification_v2') and sample records.",
+    "No absence-to-false or current-to-historical inference: factual_verification.py defaults to unresolved with 'Absence is not falsity'; _usable requires independently_reviewed, direct_claim_evidence, temporal_scope and scope_matches_claim; conflicting verdicts stay unresolved; tests cover all these branches.",
+    "Current-Wikidata audit treats raw statements as non-adjudicated: summary states raw statement IDs/qualifiers retained but 'no automatic historical truth conclusion follows from current statements'.",
+    "Original preservation: validate_poisoned checks preserved nodes, relations, questions, unresolved_paths, metadata, and the exact ordered original edge prefix; tests/test_reproducibility.test_serialized_preservation_of_every_original_object verifies it on the serialized artifact; test_temporal_semantics and test_revision_schema confirm non-mutation of in-memory originals.",
+    "Explicit additive overlay: augment_graph appends injected edges with empty evidence, source-edge provenance, and synthetic snapshot semantics; injected edges copy source observed_in_snapshots into injection_snapshots only, with SYNTHETIC_SEMANTICS text disclaiming QA support and validity intervals.",
+    "Synthetic endpoint activation without editing original observations: build_injection_visibility lists only QIDs missing a snapshot observation; snapshot_view unions observed|activated with wrappers; test_all_three_snapshots_activate_only_missing_observations and test_missing_overlay_activation_fails verify behavior and rejection of invented activations; validate_poisoned re-derives exact_overlay_visibility independently.",
+    "Config/numbers agree across artifacts: ratio .10, seed 42, top_k_max 20, total_degree; 7868 nodes, 7737 original edges, 774 injected (Decimal ROUND_HALF_EVEN of 7737*0.10), 8511 total, QA 18436, unresolved 496 in EXPECTED and validated by test_actual_dataset_counts; expansion_rounds 0 consistent with single-pass 9853>=774.",
+    "Pair-local candidate-specific transpositions: generate_candidates applies the pair mapping to both endpoints per candidate; validator reconstructs each permutation independently (pairwise_permutation_both_endpoints, directed_role_compatibility); no global rewiring or LogicPoison cyclic bijection; README's relationship-to-prior-work section is accurate.",
+    "Determinism and reproducibility: same-seed byte-identical outputs across clean subprocess runs, seed 43 yields a differing valid selection, input checksums unchanged, portable two-run clean regeneration matches delivered outputs; tools/analyze_structure_v2 baseline rejects unsupported both-position strata rather than fabricating comparisons.",
+    "QA conservative projection avoids invented second-hop pairings (single-intermediate rule), tested in test_qa_multiple_intermediates_no_false_second_hop_pairing; forbidden triples excluded from candidates."
+  ],
+  "unsupported_claims": [
+    "README's claim that both delivered SVGs received 'actual before/after rendered inspection' is a manual-process assertion not evidenced by any supplied file (numerical/geometry audit via audit_chart is evidenced by test_portable_v2).",
+    "Reports/FINAL_REPORT_v2.md, REPRODUCTION_v2.md, and the CN report are cited but not supplied, so their internal consistency with this code cannot be assessed here.",
+    "External Wikidata coverage figures (4 requests, 40 subjects, 86 edges) rest solely on the self-produced audit summary; tools/audit_facts_v2.py itself was not supplied for code-level verification."
+  ],
+  "recommended_fixes": [
+    "Include tools/audit_facts_v2.py, the final/interim reports, and evidence of the SVG rendered inspection in the review/delivery bundle.",
+    "State the 86/774 (11.1%) external coverage fraction explicitly wherever the factual audit is summarized, so downstream readers cannot mistake it for full coverage.",
+    "Consider warning or renaming output when a non-0.10 ratio is written to the fixed pat_kg_poisoned_10pct.json filename."
+  ],
+  "evidence_references": [
+    "src/inject_misinformation.py lines 59-113 (make_injected_edges, augment_graph, synthetic_class_semantics)",
+    "src/factual_verification.py lines 16-64 (_usable gating, unresolved default, conflict handling)",
+    "src/snapshot_visibility.py lines 4-56 (build_injection_visibility, snapshot_view wrappers)",
+    "src/validate_poisoned.py lines 16-93 (preservation, permutation, role-evidence, no_added_validity_fields, honest_factual_status)",
+    "tests/test_revision_schema.py lines 20-53; tests/test_temporal_semantics.py lines 16-45; tests/test_reproducibility.py lines 39-71",
+    "outputs/injection_manifest.json lines 2-14, 103-111, 153-158, 176-180; reports/validation_results.json lines 1-38",
+    "reports/revision_audit/factual_verification_summary.md lines 1-31; reports/revision_audit/structural_support.md lines 17-46",
+    "README.md lines 24-29, 31-39, 53-55"
+  ],
+  "remaining_uncertainty": [
+    "Whether the 48 passing tests and portable reproduction actually ran on the reviewer's claimed environment cannot be re-executed here; this review relies on the supplied logs, which are internally consistent (hashes, counts, and check names align across manifest, validation results, and portable reproduction evidence).",
+    "The 688 externally unaudited injected edges remain without any external evidence check by design; this is a disclosed honest coverage limitation, not a defect, since no truth conclusion is drawn from absence.",
+    "tools/audit_facts_v2.py behavior (bounded cache, --fetch network path, 12s timeout) is only documented, not code-verified in this review."
+  ]
+}

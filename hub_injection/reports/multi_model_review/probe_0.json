@@ -1,0 +1,28 @@
+{
+  "ok": true,
+  "model": "deepseek-v4-pro",
+  "session_id": "kbs-task1-v2-probe-0",
+  "thinking_requested": "auto",
+  "started_at": "2026-10-16T01:39:58.021534+00:00",
+  "prompt_sha256": "7229f8abf1c793d292934c6ef41ea1fd4f8d40fc1eebf43be9110a97bcbdcba1",
+  "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+  "http_status": 200,
+  "response_id": "e56fbfb6-3cb3-4623-b006-f1ee9894943a",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 177,
+    "completion_tokens": 966,
+    "total_tokens": 1143,
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 177,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 901
+    }
+  },
+  "cost": null,
+  "text": "{\"probe\":\"ok\",\"can_exceed_eligible_count\":false,\"explanation\":\"For k>=2, max(k+1, 2*k)=2*k, and min(eligible_count, 2*k) caps new_k at eligible_count. For k=0, new_k is 0.\"}",
+  "elapsed_seconds": 13.265
+}

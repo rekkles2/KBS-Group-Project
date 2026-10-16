@@ -1,0 +1,822 @@
+Reviewer D model gemini-4-argon-contributor
+Round4 focused adversarial review of NEW user steering: the graph must expose labels identifying synthetic relationships and participating nodes for training. Original Task1 constraints still prohibit relabeling real original entity objects as fake. No synthetic node was created. Previous three rounds already reached four-family consensus on the existing pipeline. The only added functionality is canonical node/edge CSV training labels and metadata pointers; original node objects, original edges, existing synthetic triples, all provenance and sampling configuration unchanged. Assess code, actual counts and tests below. Do not conflate synthetic construction with verified fact falsity. All774 remain factual unresolved. Verify 8511 edge labels binary774injected;7868node identity labels all0;654node participation labels1. Need no executable counterexample left. Do not force agreement. Return JSON keys reviewer_model,overall_verdict(PASS/FAIL),blocking_findings,major_findings,minor_findings,verified_checks,unsupported_claims,recommended_fixes,evidence_references,remaining_uncertainty. Text-only model has no local tools; Gemini receives actual unchanged after PNGs. Keep final concise, under1000words.
+CURRENT FILE src/export_training_labels.py
+"""Explicit construction labels, distinct from adjudicated factual truth."""
+from collections import Counter
+import csv
+from pathlib import Path
+
+
+def write_training_labels(original, augmented, outputs):
+    outputs=Path(outputs);outputs.mkdir(parents=True,exist_ok=True)
+    original_nodes={n['id'] for n in original['nodes']}
+    incoming,outgoing=Counter(),Counter()
+    edge_fields=['edge_index','source','relation','target','is_synthetic_edge','synthetic_class','factual_verification_status']
+    synthetic_count=0
+    with (outputs/'edge_injection_labels.csv').open('w',encoding='utf-8',newline='') as stream:
+        writer=csv.DictWriter(stream,fieldnames=edge_fields);writer.writeheader()
+        for index,edge in enumerate(augmented['edges']):
+            synthetic=edge.get('edge_origin')=='synthetic_injection'
+            if synthetic:
+                synthetic_count+=1;outgoing[edge['source']]+=1;incoming[edge['target']]+=1
+            writer.writerow({'edge_index':index,'source':edge['source'],'relation':edge['relation'],'target':edge['target'],
+                'is_synthetic_edge':int(synthetic),'synthetic_class':'fake' if synthetic else 'original',
+                'factual_verification_status':edge['factual_verification']['status'] if synthetic else 'not_adjudicated'})
+    node_fields=['qid','entity_type','is_synthetic_node','incident_to_synthetic_edge','synthetic_in_degree','synthetic_out_degree','synthetic_total_degree']
+    incident=0
+    with (outputs/'node_injection_labels.csv').open('w',encoding='utf-8',newline='') as stream:
+        writer=csv.DictWriter(stream,fieldnames=node_fields);writer.writeheader()
+        for node in sorted(augmented['nodes'],key=lambda n:n['id']):
+            qid=node['id'];total=incoming[qid]+outgoing[qid];incident+=int(total>0)
+            writer.writerow({'qid':qid,'entity_type':node['entity_type'],'is_synthetic_node':int(qid not in original_nodes),
+                'incident_to_synthetic_edge':int(total>0),'synthetic_in_degree':incoming[qid],
+                'synthetic_out_degree':outgoing[qid],'synthetic_total_degree':total})
+    return {'edge_rows':len(augmented['edges']),'synthetic_edges':synthetic_count,'node_rows':len(augmented['nodes']),
+            'synthetic_nodes':len({n['id'] for n in augmented['nodes']}-original_nodes),'nodes_incident_to_synthetic_edges':incident,
+            'semantics':'Construction labels only. Node incidence means participation in synthetic relations, not fictitious entity or verified false fact.'}
+
+CURRENT FILE src/inject_misinformation.py
+"""Balanced deterministic sampling and explicitly synthetic provenance."""
+import copy
+import random
+from collections import defaultdict, Counter
+from decimal import Decimal, ROUND_HALF_EVEN
+from .load_data import triple
+from .snapshot_visibility import build_injection_visibility
+from .factual_verification import annotate_factual_verification
+
+SYNTHETIC_SEMANTICS = ('Synthetic overlay visibility inherited from a source QA-projection edge; '
+                       'not QA support, historical truth, or a Wikidata validity interval.')
+
+
+def injection_budget(original_unique_edges, ratio):
+    ratio = Decimal(str(ratio))
+    if not ratio.is_finite() or ratio < 0:
+        raise ValueError('injection-ratio must be finite and nonnegative')
+    return int((Decimal(original_unique_edges) * ratio).quantize(Decimal('1'), rounding=ROUND_HALF_EVEN))
+
+
+def balanced_sample(candidates, count, seed):
+    """Round-robin types, then relations within each type; seeded bucket order.
+
+    Deduplication occurs before sampling. Uniform marginals are limited by
+    available candidates; this is not sampling proportional to original edges.
+    """
+    rng = random.Random(seed)
+    buckets = defaultdict(lambda: defaultdict(list))
+    for candidate in candidates:
+        buckets[candidate['entity_type']][candidate['relation']].append(candidate)
+    types = sorted(buckets)
+    rng.shuffle(types)
+    relations, cursors = {}, Counter()
+    for kind in types:
+        relations[kind] = sorted(buckets[kind])
+        rng.shuffle(relations[kind])
+        for relation in relations[kind]:
+            # Canonical caller-independent order before the seeded permutation.
+            buckets[kind][relation].sort(key=triple)
+            rng.shuffle(buckets[kind][relation])
+    result = []
+    while len(result) < count:
+        progress = False
+        for kind in types:
+            available = relations[kind]
+            for _ in range(len(available)):
+                relation = available[cursors[kind] % len(available)]
+                cursors[kind] += 1
+                if buckets[kind][relation]:
+                    result.append(buckets[kind][relation].pop())
+                    progress = True
+                    break
+            if len(result) == count:
+                break
+        if not progress:
+            break
+    return sorted(result, key=triple)
+
+
+def make_injected_edges(graph, chosen):
+    result = []
+    for candidate in chosen:
+        original = graph['edges'][candidate['source_edge_index']]
+        pair = candidate['hub_pair']
+        swaps = [{'position': position, 'from': original[position], 'to': candidate[position]}
+                 for position in ('source', 'target') if candidate[position] != original[position]]
+        result.append({
+            'source': candidate['source'], 'relation': candidate['relation'], 'target': candidate['target'],
+            'value': 'fake',
+            'observed_in_snapshots': list(original['observed_in_snapshots']), 'evidence': [],
+            'edge_origin': 'synthetic_injection', 'is_poisoned': True,
+            'injection_method': 'type_preserving_hub_swap',
+            'injection_snapshots': list(original['observed_in_snapshots']),
+            'source_observed_snapshots': list(original['observed_in_snapshots']),
+            'snapshot_semantics': SYNTHETIC_SEMANTICS,
+            'injection_provenance': {
+                'source_edge_index': candidate['source_edge_index'],
+                'original_source': original['source'], 'original_relation': original['relation'],
+                'original_target': original['target'], 'hub_pair': pair,
+                'pair_permutation': {pair[0]: pair[1], pair[1]: pair[0]},
+                'entity_type': candidate['entity_type'], 'swaps': swaps,
+                'source_observed_snapshots': list(original['observed_in_snapshots']),
+                'source_question_ids': sorted({e['question_id'] for e in original['evidence']}),
+                'source_evidence_references': copy.deepcopy(original['evidence']),
+                'source_evidence_semantics': 'Source-edge derivation only; does not support the injected claim.',
+                'compatibility_policy': 'original_directed_relation_role_and_counterpart_general_type',
+                'original_qa_positive_evidence': 'no_identical_conservatively_projectable_triple',
+                'factual_verification_status': 'unverified'
+            }
+        })
+    annotate_factual_verification(graph, result)
+    return result
+
+
+def augment_graph(graph, injected, manifest):
+    # Share read-only original objects; no caller function may mutate them.
+    result = dict(graph)
+    result['edges'] = list(graph['edges']) + injected
+    result['metadata'] = dict(graph['metadata'])
+    if 'task1_hub_injection' in result['metadata']:
+        raise ValueError('Input already has Task 1 injection metadata')
+    result['metadata']['task1_hub_injection'] = {
+        'method': 'additive_type_preserving_pairwise_hub_swap',
+        'release_schema_version': '2.0',
+        'synthetic_class_semantics': 'value=fake labels synthetic edge construction, not independently verified factual falsity; no entity is marked fictitious.',
+        'label_tables':{'edges':'edge_injection_labels.csv','nodes':'node_injection_labels.csv',
+            'edge_target':'is_synthetic_edge: 1=injected, 0=original',
+            'node_identity_target':'is_synthetic_node: all 0, no synthetic entity created',
+            'node_participation_target':'incident_to_synthetic_edge: 1=endpoint of an injected relation, not a fake entity'},
+        'source_statistics_semantics': 'metadata.stats is unchanged original-source statistics.',
+        'snapshot_semantics': SYNTHETIC_SEMANTICS,
+        'node_visibility_policy': 'Original node observation lists remain unchanged; overlay endpoints do not assert node QA occurrence.',
+        'augmented_statistics': {'nodes': len(graph['nodes']), 'edges': len(result['edges']),
+                                 'injected_edges': len(injected), 'qa_records': len(graph['questions'])},
+        'configuration': manifest['configuration'], 'input_sha256': manifest['input_sha256'],
+        'injection_visibility': build_injection_visibility(graph['nodes'], injected, graph['metadata']['snapshots']),
+        'independently_verified_false_count': 0, 'unverified_synthetic_count': len(injected)
+    }
+    return result
+
+CURRENT FILE run_task1.py
+#!/usr/bin/env python3
+"""Audit, generate and validate an additive PAT-KG perturbation. Python 3.10+."""
+import argparse
+import csv
+import json
+import sys
+from pathlib import Path
+
+from src.load_data import load_data, sha256, write_json
+from src.compute_degrees import compute_degrees
+from src.select_hubs import rank_eligible, initial_k, expand_k, selected_hubs
+from src.validate_original import validate_original, qa_positive_triples
+from src.generate_candidates import generate_candidates
+from src.inject_misinformation import injection_budget, balanced_sample, make_injected_edges, augment_graph
+from src.validate_poisoned import validate_poisoned
+from src.report_statistics import statistics, write_comparison
+from src.export_training_labels import write_training_labels
+
+ROOT = Path(__file__).resolve().parent
+
+
+def run(graph_path, csv_path, work_dir, ratio='0.10', seed=42, top_k_max=20):
+    graph_path, csv_path, work_dir = Path(graph_path).resolve(), Path(csv_path).resolve(), Path(work_dir).resolve()
+    outputs, reports = work_dir / 'outputs', work_dir / 'reports'
+    for path in (graph_path, csv_path):
+        if outputs == path or outputs in path.parents or reports == path or reports in path.parents:
+            raise ValueError('Input datasets must live outside generated outputs/reports directories')
+    graph, rows, hashes = load_data(graph_path, csv_path)
+    audit = validate_original(graph, rows)
+    original_stats = statistics(graph)
+    outputs.mkdir(parents=True, exist_ok=True)
+    reports.mkdir(parents=True, exist_ok=True)
+    write_json(reports / 'original_statistics.json', {**original_stats, 'audit': audit, 'input_sha256': hashes})
+    (reports / '01_original_dataset_audit.md').write_text(
+        '# Original dataset audit\n\nAll listed checks were executed before candidate generation.\n\n```json\n'
+        + json.dumps({'input_sha256': hashes, **audit}, indent=2) + '\n```\n\n'
+        + 'The graph is a directed multirelational QA annotation projection, not reconstructed temporal Wikidata.\n\n'
+        + '\n\n'.join(f'**{key}**: {graph["metadata"][key]}' for key in
+                          ('snapshot_semantics', 'node_snapshot_semantics', 'projection_semantics', 'pairing_policy'))
+        + '\n\nFull degree, relation, type and snapshot distributions: original_statistics.json.\n', encoding='utf-8')
+    degrees = compute_degrees(graph)
+    groups = rank_eligible(graph, degrees)
+    sizes = initial_k(groups, top_k_max)
+    target = injection_budget(len(graph['edges']), ratio)
+    positives = qa_positive_triples(graph)
+    history = []
+    while True:
+        hubs = selected_hubs(groups, sizes)
+        candidates, diagnostics = generate_candidates(graph, hubs, positives)
+        history.append({'k_by_type': dict(sizes), 'unique_candidates': len(candidates), 'diagnostics': diagnostics})
+        if len(candidates) >= target:
+            break
+        new_sizes = expand_k(groups, sizes)
+        if new_sizes == sizes:
+            break
+        sizes = new_sizes
+    chosen = balanced_sample(candidates, min(target, len(candidates)), seed)
+    injected = make_injected_edges(graph, chosen)
+    config = {'injection_ratio': str(ratio), 'seed': seed, 'top_k_max': top_k_max, 'hub_metric': 'total_degree',
+              'rounding': 'decimal_exact_round_half_even', 'sampling': 'round_robin_type_then_relation_seeded_within_buckets',
+              'compatibility': 'original_directed_relation_role_and_counterpart_general_type',
+              'permutation_scope': 'each_candidate_uses_one_pair_local_transposition_on_both_endpoints'}
+    source_files=[p for folder in ('src','tests','tools') for p in (ROOT/folder).glob('*.py')]
+    source_files += [ROOT/'run_task1.py',ROOT/'run_tests.py',ROOT/'requirements.txt',ROOT/'config/task1_config.json']
+    source_hashes={p.relative_to(ROOT).as_posix():sha256(p) for p in sorted(source_files)}
+    manifest = {'configuration': config, 'input_sha256': hashes,
+                'source_code_sha256': source_hashes,
+                'original_unique_edges': len(graph['edges']), 'target_injected_edges': target,
+                'actual_injected_edges': len(injected), 'candidate_count': len(candidates),
+                'initial_k_max_is_soft_expansion_limit': True,
+                'k_by_type': sizes, 'eligible_counts': {k: len(v) for k, v in groups.items()},
+                'expansion_history': history, 'factual_verification': {'verified_false': 0, 'unverified': len(injected)},
+                'release_schema_version': '2.0',
+                'synthetic_class_counts': {'fake':len(injected)},
+                'factual_verification_v2': {'verified_false':0,'verified_true':0,'unresolved':len(injected)},
+                'all_original_qa_positive_triples_checked': len(positives),
+                'qa_check_limit': 'No second-hop cross-product inference for multiple intermediates; not a factual truth oracle.',
+                'status': 'PASS' if len(injected) == target else 'PARTIAL',
+                'shortfall_reason': None if len(injected) == target else 'All eligible ranked prefixes exhausted under role, type, QA, uniqueness and self-loop constraints.'}
+    poisoned = augment_graph(graph, injected, manifest)
+    validation = validate_poisoned(graph, poisoned, hubs, target, require_target=len(injected) == target)
+    write_json(outputs / 'pat_kg_poisoned_10pct.json', poisoned)
+    with (outputs / 'injected_edges.jsonl').open('w', encoding='utf-8', newline='\n') as stream:
+        for edge in injected:
+            stream.write(json.dumps(edge, sort_keys=True, ensure_ascii=False) + '\n')
+    nodes = {n['id']: n for n in graph['nodes']}
+    with (outputs / 'hub_nodes.csv').open('w', encoding='utf-8', newline='') as stream:
+        fields = ['qid', 'label', 'entity_type', 'in_degree', 'out_degree', 'total_degree',
+                  'rank_within_type', 'selected_top_k', 'eligible_for_type_swap']
+        writer = csv.DictWriter(stream, fieldnames=fields)
+        writer.writeheader()
+        for kind, ids in groups.items():
+            for rank, qid in enumerate(ids, 1):
+                node = nodes[qid]
+                writer.writerow({'qid': qid, 'label': ' | '.join(node.get('labels', [])), 'entity_type': kind,
+                                 **degrees[qid], 'rank_within_type': rank, 'selected_top_k': rank <= sizes[kind],
+                                 'eligible_for_type_swap': True})
+    (reports / '02_hub_selection.md').write_text(
+        '# Hub selection\n\nOriginal edges only. Total degree = in + out; a self-loop counts twice. '
+        'Parallel relations count separately. Ties use lexical QID order. Eligible = true boolean, valid general type, '
+        'no quality flags, positive total degree.\n\n'
+        'Initial K = min(n, top_k_max, max(2, ceil(0.05*n))) for n >= 2; otherwise 0. '
+        'Expansion doubles ranked prefixes deterministically, beyond the initial soft cap if needed.\n\n'
+        '| Type | Eligible positive-degree nodes | Selected K |\n|---|---:|---:|\n'
+        + '\n'.join(f'| {k} | {len(groups[k])} | {sizes[k]} |' for k in groups)
+        + '\n\nThe hub CSV contains all eligible positive-degree ranked nodes; selected_top_k identifies actual hubs. '
+        'Full expansion attempts are in injection_manifest.json.\n', encoding='utf-8')
+    write_comparison(reports, original_stats, statistics(poisoned), injected, diagnostics)
+    manifest['training_labels']=write_training_labels(graph,poisoned,outputs)
+    current_hashes = {'graph': sha256(graph_path), 'entity_csv': sha256(csv_path)}
+    if current_hashes != hashes:
+        raise ValueError('Original file checksum changed during execution')
+    # Validate the actual serialized artifact, not just the in-memory object.
+    with (outputs / 'pat_kg_poisoned_10pct.json').open(encoding='utf-8') as stream:
+        serialized = json.load(stream)
+    if serialized != poisoned:
+        raise ValueError('Serialized graph differs structurally from generated graph')
+    validation = validate_poisoned(graph, serialized, hubs, target, require_target=len(injected) == target)
+    validation['serialized_graph_equals_generated_graph'] = True
+    validation['original_input_checksums_unchanged'] = current_hashes == hashes
+    manifest['output_sha256'] = {p.name: sha256(p) for p in sorted(outputs.iterdir())
+                                 if p.name in {'pat_kg_poisoned_10pct.json', 'injected_edges.jsonl', 'hub_nodes.csv',
+                                               'node_injection_labels.csv','edge_injection_labels.csv'}}
+    write_json(outputs / 'injection_manifest.json', manifest)
+    write_json(reports / 'validation_results.json', validation)
+    return {'status': manifest['status'], 'nodes': len(graph['nodes']), 'original_edges': len(graph['edges']),
+            'injected_edges': len(injected), 'total_edges': len(poisoned['edges']), 'candidates': len(candidates),
+            'expansion_rounds': len(history) - 1, 'checks_passed': len(validation['checks'])}
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--graph', type=Path, default=ROOT.parents[1] / 'pat_kg_merged.json')
+    parser.add_argument('--entities', type=Path, default=ROOT.parents[1] / 'entity_id_value_type.csv')
+    parser.add_argument('--work-dir', type=Path, default=ROOT)
+    parser.add_argument('--injection-ratio', default='0.10')
+    parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--top-k-max', type=int, default=20)
+    parser.add_argument('--hub-metric', choices=['total_degree'], default='total_degree')
+    args = parser.parse_args()
+    try:
+        result = run(args.graph, args.entities, args.work_dir, args.injection_ratio, args.seed, args.top_k_max)
+    except (ValueError, KeyError, TypeError, OSError, ArithmeticError) as error:
+        parser.exit(2, f'Task 1 failed: {error}\n')
+    print(json.dumps(result, indent=2))
+    return 0 if result['status'] == 'PASS' else 3
+
+
+if __name__ == '__main__':
+    sys.exit(main())
+
+CURRENT FILE tests/test_training_labels.py
+import csv
+import tempfile
+from pathlib import Path
+import unittest
+from src.export_training_labels import write_training_labels
+from src.generate_candidates import generate_candidates
+from src.inject_misinformation import make_injected_edges,augment_graph
+from tests.helpers import fixture
+
+
+class TrainingLabelTests(unittest.TestCase):
+    def test_node_incidence_separate_from_fictitious_node_and_edge_truth(self):
+        original=fixture();c=generate_candidates(original,{'Person':['Q1','Q2']})[0][:1]
+        injected=make_injected_edges(original,c);graph=augment_graph(original,injected,{'configuration':{},'input_sha256':{}})
+        with tempfile.TemporaryDirectory() as tmp:
+            stats=write_training_labels(original,graph,tmp)
+            nodes=list(csv.DictReader((Path(tmp)/'node_injection_labels.csv').open(encoding='utf-8')))
+            edges=list(csv.DictReader((Path(tmp)/'edge_injection_labels.csv').open(encoding='utf-8')))
+        self.assertEqual(stats['synthetic_nodes'],0)
+        self.assertTrue(all(n['is_synthetic_node']=='0' for n in nodes))
+        self.assertEqual(sum(n['incident_to_synthetic_edge']=='1' for n in nodes),2)
+        self.assertEqual(sum(int(n['synthetic_total_degree']) for n in nodes),2)
+        self.assertEqual(sum(e['is_synthetic_edge']=='1' for e in edges),1)
+        self.assertTrue(all(e['synthetic_class']=='original' and e['factual_verification_status']=='not_adjudicated' for e in edges[:-1]))
+        self.assertEqual(edges[-1]['factual_verification_status'],'unresolved')
+
+    def test_empty_overlay_all_original_labels(self):
+        original=fixture()
+        with tempfile.TemporaryDirectory() as tmp:
+            stats=write_training_labels(original,original,tmp)
+        self.assertEqual(stats['synthetic_edges'],0)
+        self.assertEqual(stats['nodes_incident_to_synthetic_edges'],0)
+
+CURRENT FILE tools/verify_delivery.py
+#!/usr/bin/env python3
+"""Check the actual delivered files, without regenerating or changing inputs."""
+import ast
+import csv
+import json
+import os
+from pathlib import Path
+import sys
+import xml.etree.ElementTree as ET
+
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
+from src.load_data import sha256,write_json
+
+
+def main():
+    manifest=json.loads((ROOT/'outputs/injection_manifest.json').read_text(encoding='utf-8'))
+    original=json.loads((ROOT.parents[1]/'pat_kg_merged.json').read_text(encoding='utf-8-sig'))
+    augmented=json.loads((ROOT/'outputs/pat_kg_poisoned_10pct.json').read_text(encoding='utf-8'))
+    injected=[json.loads(line) for line in (ROOT/'outputs/injected_edges.jsonl').read_text(encoding='utf-8').splitlines()]
+    checks={}
+    def check(name,value):
+        checks[name]=bool(value)
+        if not value:raise ValueError(f'Delivery verification failed: {name}')
+    for name,expected in manifest['output_sha256'].items():
+        check('output_hash_'+name,sha256(ROOT/'outputs'/name)==expected)
+    for name,expected in manifest['source_code_sha256'].items():
+        check('source_hash_'+name,sha256(ROOT/name)==expected)
+    check('original_graph_hash',sha256(ROOT.parents[1]/'pat_kg_merged.json')==manifest['input_sha256']['graph'])
+    check('original_csv_hash',sha256(ROOT.parents[1]/'entity_id_value_type.csv')==manifest['input_sha256']['entity_csv'])
+    check('jsonl_equals_appended_graph_edges',injected==augmented['edges'][len(original['edges']):])
+    check('jsonl_count_matches_manifest',len(injected)==manifest['actual_injected_edges']==774)
+    check('total_edges_8511',len(augmented['edges'])==8511)
+    check('original_nodes_qa_relations_unresolved_equal',all(original[k]==augmented[k] for k in ['nodes','questions','relations','unresolved_paths']))
+    check('original_edge_prefix_equal',original['edges']==augmented['edges'][:len(original['edges'])])
+    check('original_metadata_equal',all(augmented['metadata'][k]==v for k,v in original['metadata'].items()))
+    entry=ROOT.parent/'pat_kg_poisoned_10pct.json'
+    check('top_level_graph_exists_and_matches',sha256(entry)==manifest['output_sha256']['pat_kg_poisoned_10pct.json'])
+    # A normal copied file or an archive extraction is supported; no hardlink prerequisite.
+    with (ROOT/'outputs/hub_nodes.csv').open(encoding='utf-8',newline='') as stream:rows=list(csv.DictReader(stream))
+    check('selected_hub_csv_count',sum(r['selected_top_k']=='True' for r in rows)==sum(manifest['k_by_type'].values())==206)
+    for chart in ['injected_by_type.svg','injected_by_relation.svg']:
+        ET.parse(ROOT/'reports'/chart)
+    checks['svg_charts_parse']=True
+    for path in ROOT.rglob('*.py'):
+        ast.parse(path.read_text(encoding='utf-8'),filename=str(path))
+    checks['all_delivered_python_syntax_valid']=True
+    reviews_path=ROOT/'reports/multi_model_review/summary.json'
+    if reviews_path.exists():
+        reviews=json.loads(reviews_path.read_text(encoding='utf-8'))
+        check('multi_model_consensus',reviews['consensus'] is True)
+    tests=json.loads((ROOT/'reports/tests_summary.json').read_text(encoding='utf-8'))
+    check('all_tests_passed_no_skip',tests['successful'] and tests['passed']==tests['tests_run'] and tests['skipped']==0)
+    added=augmented['edges'][len(original['edges']):]
+    check('all_774_edges_value_fake',sum(e.get('value')=='fake' for e in added)==774)
+    with (ROOT/'outputs/edge_injection_labels.csv').open(encoding='utf-8',newline='') as stream:
+        edge_labels=list(csv.DictReader(stream))
+    check('all_edge_training_labels_align_with_records',len(edge_labels)==len(augmented['edges']) and all(
+        int(row['edge_index'])==i and (row['source'],row['relation'],row['target'])==(edge['source'],edge['relation'],edge['target'])
+        and int(row['is_synthetic_edge'])==int(i>=len(original['edges'])) for i,(row,edge) in enumerate(zip(edge_labels,augmented['edges']))))
+    from collections import Counter
+    indegree=Counter(e['target'] for e in added);outdegree=Counter(e['source'] for e in added)
+    with (ROOT/'outputs/node_injection_labels.csv').open(encoding='utf-8',newline='') as stream:
+        node_labels=list(csv.DictReader(stream))
+    check('all_node_training_labels_align_with_injected_endpoints',len(node_labels)==len(original['nodes']) and
+          {r['qid'] for r in node_labels}=={n['id'] for n in original['nodes']} and all(
+          r['is_synthetic_node']=='0' and int(r['incident_to_synthetic_edge'])==int(indegree[r['qid']]+outdegree[r['qid']]>0)
+          and int(r['synthetic_in_degree'])==indegree[r['qid']] and int(r['synthetic_out_degree'])==outdegree[r['qid']]
+          and int(r['synthetic_total_degree'])==indegree[r['qid']]+outdegree[r['qid']] for r in node_labels))
+    check('no_real_node_marked_fake',not any(n.get('value')=='fake' for n in augmented['nodes']))
+    check('factual_class_separate_from_truth',all(e['factual_verification']['status']=='unresolved' and e['injection_provenance']['factual_verification_status']=='unverified' for e in added))
+    from src.snapshot_visibility import snapshot_view
+    for snapshot in original['metadata']['snapshots']:
+        view=snapshot_view(augmented,snapshot)
+        visible={n['record']['id'] for n in view['nodes']}
+        check('renderable_'+snapshot,all(e['record']['source'] in visible and e['record']['target'] in visible for e in view['edges']))
+    # Exact credential scan; never report key contents or include them in output.
+    key_path=Path('E:/DevSpaceProjects/.opencode-local/api_key.txt')
+    if key_path.exists():
+        secret=key_path.read_text(encoding='utf-8-sig').strip().encode('utf-8')
+        leaks=[str(p.relative_to(ROOT)) for p in ROOT.rglob('*') if p.is_file() and '__pycache__' not in p.parts
+               and secret and secret in p.read_bytes()]
+        check('no_copied_api_credential',not leaks)
+    write_json(ROOT/'reports/final_verification.json',{'passed':all(checks.values()),'checks':checks,
+        'graph_entry':str(entry),'graph_sha256':sha256(entry),'unit_integration_tests':tests,
+        'source_inputs_unchanged':True,'delivered_graph_bytes':entry.stat().st_size})
+    print(json.dumps({'passed':True,'file_checks':len(checks),'graph_sha256':sha256(entry),
+                      'graph_bytes':entry.stat().st_size,'tests':tests['passed']},indent=2))
+
+
+if __name__=='__main__':
+    main()
+
+CURRENT FILE reports/tests_summary.json
+{
+  "tests_run": 53,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "passed": 53,
+  "successful": true
+}
+
+CURRENT FILE reports/revision_audit/portable_reproduction.json
+{
+  "python": "3.10.0",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "runtime_dependencies": "Python standard library",
+  "fresh_independent_code_and_input_copies": true,
+  "preexisting_outputs_or_cache_copied": false,
+  "hardlinks_used": false,
+  "run_output_sha256": [
+    {
+      "edge_injection_labels.csv": "898ae78dff2826e194cbf9b50db0e19bfb94684a77544b266fd2874671622b56",
+      "hub_nodes.csv": "f8efe4df66a48d4b5ad6436bf7fea0b3c6e40fc569acad76c30c0c7bebfd048c",
+      "injected_edges.jsonl": "71d15b494690ff327dec31570a36764e5567bc59d140b5483f32034aea75b398",
+      "injection_manifest.json": "95805e9ced14216170c0fb250970b5dae893c496a2928bd53ab0f9063afe9ce6",
+      "node_injection_labels.csv": "0605a04b3cb648a5938e1061d8011a7e39c6f6f4a9712b80dafbf76effa2ba0b",
+      "pat_kg_poisoned_10pct.json": "9860778471610593bf45d97096002abe321cb6417f583a41108408c26b092fcf"
+    },
+    {
+      "edge_injection_labels.csv": "898ae78dff2826e194cbf9b50db0e19bfb94684a77544b266fd2874671622b56",
+      "hub_nodes.csv": "f8efe4df66a48d4b5ad6436bf7fea0b3c6e40fc569acad76c30c0c7bebfd048c",
+      "injected_edges.jsonl": "71d15b494690ff327dec31570a36764e5567bc59d140b5483f32034aea75b398",
+      "injection_manifest.json": "95805e9ced14216170c0fb250970b5dae893c496a2928bd53ab0f9063afe9ce6",
+      "node_injection_labels.csv": "0605a04b3cb648a5938e1061d8011a7e39c6f6f4a9712b80dafbf76effa2ba0b",
+      "pat_kg_poisoned_10pct.json": "9860778471610593bf45d97096002abe321cb6417f583a41108408c26b092fcf"
+    }
+  ],
+  "canonical_output_sha256": {
+    "edge_injection_labels.csv": "898ae78dff2826e194cbf9b50db0e19bfb94684a77544b266fd2874671622b56",
+    "hub_nodes.csv": "f8efe4df66a48d4b5ad6436bf7fea0b3c6e40fc569acad76c30c0c7bebfd048c",
+    "injected_edges.jsonl": "71d15b494690ff327dec31570a36764e5567bc59d140b5483f32034aea75b398",
+    "injection_manifest.json": "95805e9ced14216170c0fb250970b5dae893c496a2928bd53ab0f9063afe9ce6",
+    "node_injection_labels.csv": "0605a04b3cb648a5938e1061d8011a7e39c6f6f4a9712b80dafbf76effa2ba0b",
+    "pat_kg_poisoned_10pct.json": "9860778471610593bf45d97096002abe321cb6417f583a41108408c26b092fcf"
+  },
+  "two_clean_runs_byte_identical": true,
+  "clean_run_matches_delivered_outputs": true,
+  "run_logs": [
+    {
+      "command": [
+        "python",
+        "run_task1.py",
+        "--graph",
+        "<supplied-inputs>/pat_kg_merged.json",
+        "--entities",
+        "<supplied-inputs>/entity_id_value_type.csv",
+        "--work-dir",
+        "<new-run-0>",
+        "--seed",
+        "42"
+      ],
+      "exit_code": 0,
+      "stdout": "{\n  \"status\": \"PASS\",\n  \"nodes\": 7868,\n  \"original_edges\": 7737,\n  \"injected_edges\": 774,\n  \"total_edges\": 8511,\n  \"candidates\": 9853,\n  \"expansion_rounds\": 0,\n  \"checks_passed\": 31\n}\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python",
+        "run_task1.py",
+        "--graph",
+        "<supplied-inputs>/pat_kg_merged.json",
+        "--entities",
+        "<supplied-inputs>/entity_id_value_type.csv",
+        "--work-dir",
+        "<new-run-1>",
+        "--seed",
+        "42"
+      ],
+      "exit_code": 0,
+      "stdout": "{\n  \"status\": \"PASS\",\n  \"nodes\": 7868,\n  \"original_edges\": 7737,\n  \"injected_edges\": 774,\n  \"total_edges\": 8511,\n  \"candidates\": 9853,\n  \"expansion_rounds\": 0,\n  \"checks_passed\": 31\n}\n",
+      "stderr": ""
+    }
+  ],
+  "tests_exit_code": 0,
+  "tests_stdout": "test_absence_and_alternative_object_are_not_false (tests.test_factual_v2.FactualVerificationTests) ... ok\ntest_annotation_roundtrip_is_deterministic_and_preserves_provenance (tests.test_factual_v2.FactualVerificationTests) ... ok\ntest_conflicting_reviewed_sources_remain_unresolved (tests.test_factual_v2.FactualVerificationTests) ... ok\ntest_direct_contradiction_requires_reviewed_matching_scope (tests.test_factual_v2.FactualVerificationTests) ... ok\ntest_independently_reviewed_direct_positive_can_support_true (tests.test_factual_v2.FactualVerificationTests) ... ok\ntest_local_annotation_match_is_recorded_separately_from_historical_truth (tests.test_factual_v2.FactualVerificationTests) ... ok\ntest_unreviewed_model_output_and_raw_statement_are_not_ground_truth (tests.test_factual_v2.FactualVerificationTests) ... ok\ntest_wrong_triple_and_missing_scope_remain_unresolved (tests.test_factual_v2.FactualVerificationTests) ... ok\ntest_flags_unknown_ineligible_and_isolated_excluded (tests.test_hub_selection.HubSelectionTests) ... ok\ntest_k_formula_and_expansion (tests.test_hub_selection.HubSelectionTests) ... ok\ntest_lexical_ties_per_type (tests.test_hub_selection.HubSelectionTests) ... ok\ntest_multirelational_degree_self_loop (tests.test_hub_selection.HubSelectionTests) ... ok\ntest_both_positions_consistent_and_direction_preserved (tests.test_injection.InjectionTests) ... ok\ntest_budget_exact_decimal_half_even (tests.test_injection.InjectionTests) ... ok\ntest_candidate_decisions_partition_all_pair_edge_attempts (tests.test_injection.InjectionTests) ... ok\ntest_donor_relation_role_evidence_required (tests.test_injection.InjectionTests) ... ok\ntest_independent_validator_detects_altered_provenance (tests.test_injection.InjectionTests) ... ok\ntest_positive_qa_triple_original_and_duplicate_exclusion (tests.test_injection.InjectionTests) ... ok\ntest_qa_multiple_intermediates_no_false_second_hop_pairing (tests.test_injection.InjectionTests) ... ok\ntest_quality_flags_and_cross_type_hubs_rejected (tests.test_injection.InjectionTests) ... ok\ntest_sampler_exhausted_small_buckets_do_not_starve_large_type (tests.test_injection.InjectionTests) ... ok\ntest_zero_budget_is_empty_and_deterministic (tests.test_injection.InjectionTests) ... ok\ntest_complete_audit_and_known_annotation_duplicates (tests.test_original_audit.OriginalAuditTests) ... ok\ntest_csv_type_disagreement_is_error (tests.test_original_audit.OriginalAuditTests) ... ok\ntest_dangling_edge_endpoint_is_error (tests.test_original_audit.OriginalAuditTests) ... ok\ntest_duplicate_original_triple_is_error (tests.test_original_audit.OriginalAuditTests) ... ok\ntest_wrong_qa_hop_reference_is_error (tests.test_original_audit.OriginalAuditTests) ... ok\ntest_chart_audit_rejects_wrong_count (tests.test_portable_v2.PortableTests) ... ok\ntest_package_omits_credentials_and_caches_but_hashes_inputs (tests.test_portable_v2.PortableTests) ... ok\ntest_actual_dataset_counts (tests.test_reproducibility.ActualDatasetIntegrationTests) ... ok\ntest_alternative_seed_changes_valid_selection (tests.test_reproducibility.ActualDatasetIntegrationTests) ... ok\ntest_inputs_untouched_after_repeated_runs (tests.test_reproducibility.ActualDatasetIntegrationTests) ... ok\ntest_same_seed_all_outputs_identical_bytes (tests.test_reproducibility.ActualDatasetIntegrationTests) ... ok\ntest_serialized_preservation_of_every_original_object (tests.test_reproducibility.ActualDatasetIntegrationTests) ... ok\ntest_all_three_snapshots_activate_only_missing_observations (tests.test_revision_schema.RevisionSchemaTests) ... ok\ntest_every_accepted_candidate_has_a_changed_position (tests.test_revision_schema.RevisionSchemaTests) ... ok\ntest_fake_labels_edges_and_separate_unresolved_truth (tests.test_revision_schema.RevisionSchemaTests) ... ok\ntest_label_tamper_is_rejected (tests.test_revision_schema.RevisionSchemaTests) ... ok\ntest_missing_overlay_activation_fails (tests.test_revision_schema.RevisionSchemaTests) ... ok\ntest_presort_is_needed_for_input_order_independent_seed (tests.test_revision_schema.RevisionSchemaTests) ... ok\ntest_randomized_pairs_preserve_identity_and_renderability (tests.test_revision_schema.RevisionSchemaTests) ... ok\ntest_unsupported_factual_truth_tamper_is_rejected (tests.test_revision_schema.RevisionSchemaTests) ... ok\ntest_full_expansion_reports_maximum_without_fabricating_edges (tests.test_shortfall.ShortfallTests) ... ok\ntest_baseline_seed_constraints_and_forbidden (tests.test_structure_v2.StructuralTests) ... ok\ntest_degree_bins (tests.test_structure_v2.StructuralTests) ... ok\ntest_projection_clustering_and_directional_degree (tests.test_structure_v2.StructuralTests) ... ok\ntest_reject_unsupported_both_position_stratum (tests.test_structure_v2.StructuralTests) ... ok\ntest_tested_edge_is_excluded (tests.test_structure_v2.StructuralTests) ... ok\ntest_original_objects_and_metadata_untouched (tests.test_temporal_semantics.TemporalTests) ... ok\ntest_source_snapshots_and_qa_derivation_only (tests.test_temporal_semantics.TemporalTests) ... ok\ntest_validation_rejects_false_qa_support_and_invented_validity (tests.test_temporal_semantics.TemporalTests) ... ok\ntest_empty_overlay_all_original_labels (tests.test_training_labels.TrainingLabelTests) ... ok\ntest_node_incidence_separate_from_fictitious_node_and_edge_truth (tests.test_training_labels.TrainingLabelTests) ... ok\n\n----------------------------------------------------------------------\nRan 53 tests in 15.208s\n\nOK\n\n{\"tests_run\": 53, \"failures\": 0, \"errors\": 0, \"skipped\": 0, \"passed\": 53, \"successful\": true}\n",
+  "tests_stderr": ""
+}
+
+CURRENT FILE outputs/injection_manifest.json
+{
+  "actual_injected_edges": 774,
+  "all_original_qa_positive_triples_checked": 7738,
+  "candidate_count": 9853,
+  "configuration": {
+    "compatibility": "original_directed_relation_role_and_counterpart_general_type",
+    "hub_metric": "total_degree",
+    "injection_ratio": "0.10",
+    "permutation_scope": "each_candidate_uses_one_pair_local_transposition_on_both_endpoints",
+    "rounding": "decimal_exact_round_half_even",
+    "sampling": "round_robin_type_then_relation_seeded_within_buckets",
+    "seed": 42,
+    "top_k_max": 20
+  },
+  "eligible_counts": {
+    "AdministrativeArea": 339,
+    "Brand": 2,
+    "Building": 25,
+    "CentralBank": 6,
+    "CityTown": 583,
+    "Company": 140,
+    "Concept": 2,
+    "Country": 73,
+    "CreativeWork": 4,
+    "CulturalInstitution": 14,
+    "CulturalOrganization": 5,
+    "EducationalInstitution": 76,
+    "Event": 1,
+    "Facility": 7,
+    "Family": 1,
+    "GeographicLocation": 2,
+    "GovernmentOrganization": 83,
+    "HigherEducationInstitution": 102,
+    "MediaOrganization": 49,
+    "Occupation": 1,
+    "Organization": 122,
+    "Person": 3719,
+    "PoliticalParty": 167,
+    "Position": 227,
+    "ReligiousOrganization": 5,
+    "ResearchInstitution": 34,
+    "Road": 2,
+    "School": 163,
+    "ScientificInstrument": 1,
+    "SportsOrganization": 39,
+    "SportsTeam": 807,
+    "SportsVenue": 338,
+    "University": 506,
+    "Vehicle": 1
+  },
+  "expansion_history": [
+    {
+      "diagnostics": {
+        "accepted_unique": 9853,
+        "attempted": 15526,
+        "rejected_by_reason": {
+          "duplicate": 752,
+          "missing_source_donor_evidence": 2883,
+          "missing_target_donor_evidence": 1878,
+          "original_triple": 154,
+          "self_loop": 6
+        }
+      },
+      "k_by_type": {
+        "AdministrativeArea": 17,
+        "Brand": 2,
+        "Building": 2,
+        "CentralBank": 2,
+        "CityTown": 20,
+        "Company": 7,
+        "Concept": 2,
+        "Country": 4,
+        "CreativeWork": 2,
+        "CulturalInstitution": 2,
+        "CulturalOrganization": 2,
+        "EducationalInstitution": 4,
+        "Event": 0,
+        "Facility": 2,
+        "Family": 0,
+        "GeographicLocation": 2,
+        "GovernmentOrganization": 5,
+        "HigherEducationInstitution": 6,
+        "MediaOrganization": 3,
+        "Occupation": 0,
+        "Organization": 7,
+        "Person": 20,
+        "PoliticalParty": 9,
+        "Position": 12,
+        "ReligiousOrganization": 2,
+        "ResearchInstitution": 2,
+        "Road": 2,
+        "School": 9,
+        "ScientificInstrument": 0,
+        "SportsOrganization": 2,
+        "SportsTeam": 20,
+        "SportsVenue": 17,
+        "University": 20,
+        "Vehicle": 0
+      },
+      "unique_candidates": 9853
+    }
+  ],
+  "factual_verification": {
+    "unverified": 774,
+    "verified_false": 0
+  },
+  "factual_verification_v2": {
+    "unresolved": 774,
+    "verified_false": 0,
+    "verified_true": 0
+  },
+  "initial_k_max_is_soft_expansion_limit": true,
+  "input_sha256": {
+    "entity_csv": "c653dde9d87f61295dac67aac1151d5510c7d6b9c0081ada82b31ea1f053be2e",
+    "graph": "f5a1c2f4b556bf060e89540ab1b5c05f836afe29cc0f13cdcd80f92120171f31"
+  },
+  "k_by_type": {
+    "AdministrativeArea": 17,
+    "Brand": 2,
+    "Building": 2,
+    "CentralBank": 2,
+    "CityTown": 20,
+    "Company": 7,
+    "Concept": 2,
+    "Country": 4,
+    "CreativeWork": 2,
+    "CulturalInstitution": 2,
+    "CulturalOrganization": 2,
+    "EducationalInstitution": 4,
+    "Event": 0,
+    "Facility": 2,
+    "Family": 0,
+    "GeographicLocation": 2,
+    "GovernmentOrganization": 5,
+    "HigherEducationInstitution": 6,
+    "MediaOrganization": 3,
+    "Occupation": 0,
+    "Organization": 7,
+    "Person": 20,
+    "PoliticalParty": 9,
+    "Position": 12,
+    "ReligiousOrganization": 2,
+    "ResearchInstitution": 2,
+    "Road": 2,
+    "School": 9,
+    "ScientificInstrument": 0,
+    "SportsOrganization": 2,
+    "SportsTeam": 20,
+    "SportsVenue": 17,
+    "University": 20,
+    "Vehicle": 0
+  },
+  "original_unique_edges": 7737,
+  "output_sha256": {
+    "edge_injection_labels.csv": "898ae78dff2826e194cbf9b50db0e19bfb94684a77544b266fd2874671622b56",
+    "hub_nodes.csv": "f8efe4df66a48d4b5ad6436bf7fea0b3c6e40fc569acad76c30c0c7bebfd048c",
+    "injected_edges.jsonl": "71d15b494690ff327dec31570a36764e5567bc59d140b5483f32034aea75b398",
+    "node_injection_labels.csv": "0605a04b3cb648a5938e1061d8011a7e39c6f6f4a9712b80dafbf76effa2ba0b",
+    "pat_kg_poisoned_10pct.json": "9860778471610593bf45d97096002abe321cb6417f583a41108408c26b092fcf"
+  },
+  "qa_check_limit": "No second-hop cross-product inference for multiple intermediates; not a factual truth oracle.",
+  "release_schema_version": "2.0",
+  "shortfall_reason": null,
+  "source_code_sha256": {
+    "config/task1_config.json": "1227f968b2fd16a87e46e23cc608cb3df91c9dc1da98c7c8a5239fcc58b33e00",
+    "requirements.txt": "25a7bb5e5355f39d35ec8d29296c0d2178a49306e47edfd9a37eb99ab430d3ee",
+    "run_task1.py": "7d40256f375dcb54ca61131e96968b31864cbadcda772c13c0c5d262042dc2a1",
+    "run_tests.py": "97330c7f4756c1aadc88c87d295901f999b2ea2e0ad3d160f1c99577111c7323",
+    "src/__init__.py": "5b93aab02777d7db4d80e2039884bc4a53cb46e0184d19330f9e69cea9262781",
+    "src/compute_degrees.py": "66abe83f45b0d1bd383601e9af2a51d89968d85cf9d4f5cb8120a9acd40b9dde",
+    "src/export_training_labels.py": "4433eadfcf5252d5593095a041f7b59b6dd52030fbecb36df34b59e90d25e785",
+    "src/factual_verification.py": "bc89dd686f3392a733a2f39281099463ec341ffbc2e7887d0ae1656f297041a2",
+    "src/generate_candidates.py": "3cefefbaaa8a1a91ebd6f2b1ff11d4e6fb75249349f94ee819c651ede65b75dd",
+    "src/inject_misinformation.py": "2c4330fa1626e832c6cafb8baed5fc9c369ecc7a2edb5d8de178fcb34b51427d",
+    "src/load_data.py": "1326bbf58a2b794d78a0c741ed0ba86dd60eba0234b8631f8960560ca26b1864",
+    "src/report_statistics.py": "8ae425953400d5a624a37921c6e2d27acb6cbbd806e8e06a7a3b4c3034bb80a6",
+    "src/select_hubs.py": "42bcc4ac208a39a5a0ecc212943706eb80439dc10c343114b044e009cef6aea7",
+    "src/snapshot_visibility.py": "8b3eafe141aa5e03d76ec9a15e0e6e5097d0de72584a1fdf0e508fdba02ca73e",
+    "src/validate_original.py": "20be57866073fcb5fb30e742992a9507ed1b8e0edf7d2a531aad7fed5c4468fc",
+    "src/validate_poisoned.py": "5cf0b49c81f3cf20f28e2bbe23b60944fec49ad58eb4dc9f977f4175038db05e",
+    "tests/__init__.py": "f3bc078ebe468422007fc5cdef31b8d2cd627b6acca817fde98102bacf4e836e",
+    "tests/helpers.py": "f68d67dc47d2f3fee4ea7568382f3aa868da47e4f5e9254fc7ea206dbb21f176",
+    "tests/test_factual_v2.py": "5ade2e7b7aac0fb394854fdc56bf288745373ed2afefcb9164c109de39c9ffde",
+    "tests/test_hub_selection.py": "dbfd954af922aad1ae401e2793ebefb69be09a259e8c94e2d5078a640ec70fd4",
+    "tests/test_injection.py": "6959c1ac0968ddf6ceb9717d3c645b3e96faff386c7a56703db73883877f0e94",
+    "tests/test_original_audit.py": "e8e3c5f5562546599731260b9bfcabd9a76911fc0174c1d6c54612b821c5ae2b",
+    "tests/test_portable_v2.py": "7a14b62744d52098e621f6f0e8794cdad8e555911f0a324400ba1c1de4e7fbe8",
+    "tests/test_reproducibility.py": "ffa3f10265ed9f3ae076fa5f560c99008695232a7f6c233ef98038b602d2c269",
+    "tests/test_revision_schema.py": "0f3e26b67d9c3e3a6359cb3e90da5dffaf2279c39ff512d9ced706e966306dd0",
+    "tests/test_shortfall.py": "9e4e95e50fbcc7bf46673489652bd38d776a299a9fc48c1e8f3f84eb6af2ef1c",
+    "tests/test_structure_v2.py": "5d8f11df7095ff346a90fa4d4f134a4866222c6008b39b56059c720c5c94f1d1",
+    "tests/test_temporal_semantics.py": "a9be8d4855e559e034cc3eaa74b02ee96f1d010391798ca658238445d0ad08c5",
+    "tests/test_training_labels.py": "def69849ea2755a5855db691dc94045876141eb81466d34951806bf172e5da45",
+    "tools/analyze_structure_v2.py": "584bbe1f345dcacdc55ef2b65b2181fe9a48e2be2d0afcb33753cef9212a19e5",
+    "tools/audit_facts_v2.py": "32a18612847fd0932a8f3cf6cd0edf33a4a2924a0e1e89bb0948c8c23f8c07d8",
+    "tools/audit_visuals_v2.py": "9a633b13e40a8fb9f774d09e9b12ad9aedfe6effa8d0c3f6a7de92d7fcd420bc",
+    "tools/build_handoff.py": "62dfbbec80a6127fe8aadba14f4c46c34b41e365d8ec38698bdd304338d67303",
+    "tools/build_handoff_v2.py": "5350c24732355d781182b1c3b509782ac27c9db178a280c8a00171f803c179bb",
+    "tools/discover_models_v2.py": "83e87bf8576d091cbdb71f21f1e0697d488982d74ca19d7a673e9ef5dfa34bd8",
+    "tools/export_snapshot_v2.py": "dbd5f490ef985e488b021a76ab7fa1f7934128e957fb97bd23eb64ec102ce2c2",
+    "tools/opencode_task_worker.py": "df088ef4224987f3e5a5b43f5d3f3134fa6dbbf11ae3c39b38511fb27424efb3",
+    "tools/package_release_v2.py": "c90a1575c81153ef44b1b99c26cf9c60abd103ca109c47d758b942f695127048",
+    "tools/review_v2.py": "0c6073ba21af782c462f5afd8ce7273c66a8a89ac7080f4ad29b21a80673e9ec",
+    "tools/run_opencode_reviews.py": "c337cf54021bb61d0b90582becd31455271ac403cddc3386c89eb77905b63350",
+    "tools/verify_delivery.py": "fc5a9cebdfdb977ece872d6be6946ac8c5f9b0d42103bef1848f4b2fb871e2fc"
+  },
+  "status": "PASS",
+  "synthetic_class_counts": {
+    "fake": 774
+  },
+  "target_injected_edges": 774,
+  "training_labels": {
+    "edge_rows": 8511,
+    "node_rows": 7868,
+    "nodes_incident_to_synthetic_edges": 654,
+    "semantics": "Construction labels only. Node incidence means participation in synthetic relations, not fictitious entity or verified false fact.",
+    "synthetic_edges": 774,
+    "synthetic_nodes": 0
+  }
+}
+
+CURRENT FILE reports/FINAL_REPORT_v2.md
+# Task 1 revised release v2
+
+## Executive result and preserved baseline
+
+The existing implementation was revised in place after an independent byte-copy backup at `D:\学习\KBS_project\new_KG\releases\baseline_v1_20261016T103451+0900`. Original input files and the prior parent ZIP were preserved. The final graph at `../pat_kg_poisoned_10pct.json` is an ordinary independent copy matching outputs; no Windows hard link is needed.
+
+Independent recomputation confirms 7,868 nodes, 7,737 original edges, 774 additions, 8,511 total edges, 18,436 QA, 496 unresolved paths, 206 selected hubs and 9,853 eligible unique candidates. Every original object, edge ordering, QA/evidence/temporal assignment and source metadata remains unchanged. Every pre-existing injected triple and provenance field also remains identical. Input hashes are in revision_audit/original_file_hashes.json; independent hub ranking and all-pair candidate counts are independently recorded.
+
+## Synthetic annotation and factual verification
+
+All 774 synthetic edges now carry `value: "fake"`; no original edge or real Wikidata node is relabeled. fake denotes synthetic construction, **not proven factual falsity**. Separate factual_verification.status is unresolved; legacy provenance unverified is retained unchanged. The canonical pipeline generates the labels and the validator checks serialized output.
+
+All 774 exact claims were compared with original KG/PAT positive annotations, finding no identical positive. Four actual HTTP-200 Wikidata requests retrieved 40 subjects, covering all 18 relations and 86/774 claims (11.1%). The purposive sample is not statistical coverage; 688 claims have no external statement lookup. Raw statements, qualifiers, references, URLs, timestamps and hashes are cached. No identical current claim was found in that sample. Missing or different objects are not falsity proofs, especially for multivalued/time-dependent relations. Current statements cannot establish historical snapshot truth. Result: **0 verified_false, 0 verified_true, 774 unresolved**. No verified misinformation subset or unsupported replacement is claimed.
+
+Canonical generation remains offline and deterministic. The factual-layer API supports explicit reviewed evidence; its legacy fields remain immutable. An executed tampering test demonstrated that a bogus verified_false label with a nonempty citation was previously accepted. The validator now rederives annotations under the same explicit evidence context and rejects that mutation. Model assessments never supply factual ground truth.
+
+## Snapshot visibility repair
+
+Baseline audit confirmed 38 distinct injected edges with an originally unobserved endpoint in at least one snapshot: 19/6/19 edge-snapshot cases for Dec2021/Dec2023/March2024. Visible injected-edge counts remain 642/649/609. Added namespaced overlay lists activate 6/1/4 real QIDs, respectively. Original observed_in_snapshots arrays are unchanged. Synthetic activation is not an invented original observation, fake node or historical validity interval.
+
+The non-mutating snapshot adapter distinguishes original observation, real-node overlay activation and synthetic edge styling. All three actual CLI exports and automated tests have zero non-renderable visible endpoints under that explicit policy. The original-observation mismatch is deliberately retained, not reinterpreted as repaired historical evidence. Per-snapshot counts overlap and must not be summed as distinct graph edges.
+
+## Pair-local method and structural support
+
+Configuration and pair-local method were retained: ratio .10, seed42, initial topK20, original total-degree ranking, same-type eligible donors and directed relation-role evidence. Both positions use a fixed pair's transposition; different candidates may use overlapping pairs. **Pair-local additive graph injection != global graph rewiring**. This is not exact LogicPoison reproduction. No Task 2, training or KGQA efficacy experiment was run.
+
+Ten random seeds each generated 774 legal diagnostic edges matching source edge, type, relation, changed position and snapshots. Replacement original-degree bins all matched without fallback, but exact degree did not: endpoint means Hub 4.58204 versus random 4.40795. Actual changes are source-only388, target-only386, two-position0; all 774 entered each baseline, with no hidden filtering.
+
+Clustering/common-neighbor/component/path metrics use an explicitly simple undirected projection and do not verify a directed relation. Original common-neighbor means are both .001292; original same-component proportions .58010 versus .58295, so original-topology support is not uniformly stronger. Augmented alternative-path proportions are .998708 versus .926873 after excluding the tested triple, but paths may use other synthetic edges. Augmented common-neighbor means .042636 versus .028682. Hub leaves764 components versus random701.9 (808 originally); average global local clustering decreases. These are mixed descriptive results, not causal hub advantages or attack success. Reported intervals concern Monte Carlo variation of ten random-baseline means, not factual confidence or downstream effects.
+
+## Figures and standalone reproducibility
+
+Both delivered SVGs were actually rendered and viewed before/after. Eighteen relation and23 type categories independently total774; every count, bar width and text boundary was checked. Captions now distinguish synthetic injection from verified falsity. The parent HTML explorer embeds only the original graph; no synthetic styling is claimed for it. The documented adapter is the v2 consumer interface.
+
+Final suite: **53/53 passed**, no failures/errors/skips. An isolated independent copy of code and actual supplied inputs regenerated from absent output directories twice; all six output files match delivery, and the copied full suite passed. Separate integration tests run seeds42,42,43 under python -E -S. Python3.10.0/stdlib is the verified generation environment; browser tooling is optional for figure audits. Exact cross-version shuffle bytes are not promised. Portable ZIP omits original datasets with complete filename/size/SHA-256 input manifest; explicit input paths require no hardlink, API key or stale cache. See REPRODUCTION_v2.md and REPRODUCTION_v2_CN.md.
+
+## Adversarial multi-model review
+
+Models/families: deepseek-v4-pro, glm-5.3, qwen3.8-max, gemini-4-argon-contributor. Substantive rounds: 3; consensus: PARTIAL/pending. Actual requests, responses, IDs, timestamps, usage and failures are preserved. Gemini received actual PNG bytes through the documented OpenCode Go Google route after chat-protocol rejection. Other initial requests exhausted reasoning or timed out; model-specific controls were checked in primary documentation and used in recorded retries. No provider fallback or key copying occurred. Text reviewers never claimed local execution or image inspection.
+
+Findings were reconciled with actual code and counterexamples. Source hashes now cover runtime, tests, tools, entry scripts, configuration and requirements. Removing pre-shuffle sorting was rejected by an executed input-order counterexample. A supposed two-position diagnostic mismatch was rejected by the actual388/386/0 distribution. The alleged anomalous October date was rejected against the client date2026-10-16. All reviewer findings, including false positives and editorial limitations, remain in findings_registry.json and final_adjudication.md. External facts were not decided by vote.
+
+## Reproduction, inventory and limitations
+
+Core outputs: outputs/pat_kg_poisoned_10pct.json, injected_edges.jsonl, injection_manifest.json, hub_nodes.csv, node_injection_labels.csv, edge_injection_labels.csv. The node CSV separately records original-vs-synthetic entity identity and participation in synthetic relations; all node identity targets are0. The edge CSV provides binary construction labels for all8511 directed triples. Code/tests/config: src/, tests/, tools/, run_task1.py, run_tests.py. Reports: revision_audit/ (baseline, independent reconciliation/candidate count, factual CSV/cache, structural metrics, actual renders/visual audits, snapshot CLI, portable reproduction), multi_model_review/, tests.log, validation_results.json, final_verification.json, bilingual reproduction and CHANGELOG_v2.md. The original v1 report remains in the independent backup.
+
+Input graph SHA-256 `f5a1c2f4b556bf060e89540ab1b5c05f836afe29cc0f13cdcd80f92120171f31`; CSV `c653dde9d87f61295dac67aac1151d5510c7d6b9c0081ada82b31ea1f053be2e`. Final graph SHA-256 `9860778471610593bf45d97096002abe321cb6417f583a41108408c26b092fcf`. All unresolved claims and methodological limits are explicit above. Main steps: run_task1.py with --graph/--entities; run_tests.py with PAT_KG_INPUT_DIR; audit_facts_v2.py; analyze_structure_v2.py; package_release_v2.py --check-clean; verify_delivery.py; build_handoff_v2.py. Exact commands and package extraction are in the bilingual reproduction documents.
+
+```text
+TASK 1 REVISED STATUS: PARTIAL
+Original nodes preserved: YES
+Original edges preserved: YES
+Injected edge count: 774
+Total edge count: 8511
+Injected edges labeled value=fake: 774
+Original nodes incorrectly labeled fake: 0
+Verified false statements: 0
+Verified true statements: 0
+Unresolved factual statuses: 774
+Snapshot visibility violations: 0 under explicit overlay adapter
+Structural-support analysis completed: YES
+Visualization review completed: YES
+Automated tests passed: 53 / 53
+Distinct OpenCode model families used: 4
+Adversarial review rounds: 3
+Multi-model consensus: PARTIAL
+Remaining blocking issues: see current review/portability evidence
+Remaining methodological limitations: 774 factual claims unresolved; purposive external coverage 86/774; undirected structural proxies; conditional degree-bin baseline; offline merged snapshots; no downstream efficacy evaluation.
+```
+
+LABEL RECORD SAMPLES node_injection_labels.csv
+[{"qid": "Q100", "entity_type": "CityTown", "is_synthetic_node": "0", "incident_to_synthetic_edge": "1", "synthetic_in_degree": "2", "synthetic_out_degree": "0", "synthetic_total_degree": "2"}, {"qid": "Q1000", "entity_type": "Country", "is_synthetic_node": "0", "incident_to_synthetic_edge": "0", "synthetic_in_degree": "0", "synthetic_out_degree": "0", "synthetic_total_degree": "0"}, {"qid": "Q1000060", "entity_type": "CityTown", "is_synthetic_node": "0", "incident_to_synthetic_edge": "0", "synthetic_in_degree": "0", "synthetic_out_degree": "0", "synthetic_total_degree": "0"}, {"qid": "Q999763", "entity_type": "University", "is_synthetic_node": "0", "incident_to_synthetic_edge": "0", "synthetic_in_degree": "0", "synthetic_out_degree": "0", "synthetic_total_degree": "0"}, {"qid": "Q99982565", "entity_type": "Person", "is_synthetic_node": "0", "incident_to_synthetic_edge": "0", "synthetic_in_degree": "0", "synthetic_out_degree": "0", "synthetic_total_degree": "0"}]
+LABEL RECORD SAMPLES edge_injection_labels.csv
+[{"edge_index": "0", "source": "Q100", "relation": "P6", "target": "Q16202473", "is_synthetic_edge": "0", "synthetic_class": "original", "factual_verification_status": "not_adjudicated"}, {"edge_index": "1", "source": "Q100", "relation": "P6", "target": "Q70494400", "is_synthetic_edge": "0", "synthetic_class": "original", "factual_verification_status": "not_adjudicated"}, {"edge_index": "2", "source": "Q1000", "relation": "P35", "target": "Q270645", "is_synthetic_edge": "0", "synthetic_class": "original", "factual_verification_status": "not_adjudicated"}, {"edge_index": "8509", "source": "Q982461", "relation": "P69", "target": "Q1093910", "is_synthetic_edge": "1", "synthetic_class": "fake", "factual_verification_status": "unresolved"}, {"edge_index": "8510", "source": "Q982461", "relation": "P69", "target": "Q1276338", "is_synthetic_edge": "1", "synthetic_class": "fake", "factual_verification_status": "unresolved"}]

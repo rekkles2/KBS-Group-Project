@@ -1,0 +1,787 @@
+{
+  "recorded_at": "2026-10-16T02:09:59.058771+00:00",
+  "inference_requests": [
+    {
+      "artifact": "probe_0.json",
+      "model": "deepseek-v4-pro",
+      "ok": true,
+      "started_at": "2026-10-16T01:39:58.021534+00:00",
+      "response_id": "e56fbfb6-3cb3-4623-b006-f1ee9894943a",
+      "session_id": "kbs-task1-v2-probe-0",
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "request_parameters": null,
+      "thinking_requested": "auto",
+      "prompt_sha256": "7229f8abf1c793d292934c6ef41ea1fd4f8d40fc1eebf43be9110a97bcbdcba1",
+      "image_sha256": null,
+      "http_status": 200,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 177,
+        "completion_tokens": 966,
+        "total_tokens": 1143,
+        "prompt_cache_hit_tokens": 0,
+        "prompt_cache_miss_tokens": 177,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 901
+        }
+      },
+      "cost": null,
+      "elapsed_seconds": 13.265,
+      "error": null
+    },
+    {
+      "artifact": "probe_1.json",
+      "model": "glm-5.3",
+      "ok": true,
+      "started_at": "2026-10-16T01:39:59.256269+00:00",
+      "response_id": "chatcmpl-69e72d3b",
+      "session_id": "kbs-task1-v2-probe-1",
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "request_parameters": null,
+      "thinking_requested": "auto",
+      "prompt_sha256": "7229f8abf1c793d292934c6ef41ea1fd4f8d40fc1eebf43be9110a97bcbdcba1",
+      "image_sha256": null,
+      "http_status": 200,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 109,
+        "completion_tokens": 1730,
+        "total_tokens": 1839,
+        "prompt_tokens_details": {
+          "cached_tokens": 9
+        },
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "reasoning_tokens": 1540,
+          "rejected_prediction_tokens": null
+        }
+      },
+      "cost": null,
+      "elapsed_seconds": 28.391,
+      "error": null
+    },
+    {
+      "artifact": "probe_2.json",
+      "model": "qwen3.8-max",
+      "ok": true,
+      "started_at": "2026-10-16T01:40:00.421932+00:00",
+      "response_id": "chatcmpl-0388db73-563e-448d-93e9-50d3bcc09a99",
+      "session_id": "kbs-task1-v2-probe-2",
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "request_parameters": null,
+      "thinking_requested": "auto",
+      "prompt_sha256": "7229f8abf1c793d292934c6ef41ea1fd4f8d40fc1eebf43be9110a97bcbdcba1",
+      "image_sha256": null,
+      "http_status": 200,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 159,
+        "completion_tokens": 317,
+        "total_tokens": 476,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 235
+        }
+      },
+      "cost": null,
+      "elapsed_seconds": 9.047,
+      "error": null
+    },
+    {
+      "artifact": "round_01/A_direct_response.json",
+      "model": "deepseek-v4-pro",
+      "ok": true,
+      "started_at": "2026-10-16T01:47:26.352298+00:00",
+      "response_id": "c17b560e-43ed-4d6f-85f8-cd0040f57041",
+      "session_id": "kbs-task1-v2-r1-A",
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "request_parameters": null,
+      "thinking_requested": "disabled",
+      "prompt_sha256": "1b56a0d399561f32b2e61b8edd77069f92608a2e26462982d288cc150ec4233c",
+      "image_sha256": null,
+      "http_status": 200,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 45641,
+        "completion_tokens": 3770,
+        "total_tokens": 49411,
+        "prompt_cache_hit_tokens": 0,
+        "prompt_cache_miss_tokens": 45641,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "cost": null,
+      "elapsed_seconds": 51.032,
+      "error": null
+    },
+    {
+      "artifact": "round_01/A_response.json",
+      "model": "deepseek-v4-pro",
+      "ok": false,
+      "started_at": "2026-10-16T01:42:28.491770+00:00",
+      "response_id": "656aa828-c28a-406d-857b-ef699c498e88",
+      "session_id": "kbs-task1-v2-r1-A",
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "request_parameters": null,
+      "thinking_requested": "auto",
+      "prompt_sha256": "fba4fdd56896250afa0f1f7e9bb3df9492ae181ecd56527c81e8a536aa1aa482",
+      "image_sha256": null,
+      "http_status": 200,
+      "finish_reason": "length",
+      "usage": {
+        "prompt_tokens": 45139,
+        "completion_tokens": 13999,
+        "total_tokens": 59138,
+        "prompt_cache_hit_tokens": 0,
+        "prompt_cache_miss_tokens": 45139,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 13999
+        }
+      },
+      "cost": null,
+      "elapsed_seconds": 187.578,
+      "error": "ValueError: No usable final text returned"
+    },
+    {
+      "artifact": "round_01/B_direct_response.json",
+      "model": "glm-5.3",
+      "ok": true,
+      "started_at": "2026-10-16T01:48:41.069347+00:00",
+      "response_id": "chatcmpl-7b0875bf",
+      "session_id": "kbs-task1-v2-r1-B",
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "request_parameters": null,
+      "thinking_requested": "enabled",
+      "prompt_sha256": "e79b070cc955cd51a57c8fd737d2232c6a5df75fcea138b0db1b122c2a9695da",
+      "image_sha256": null,
+      "http_status": 200,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 42945,
+        "completion_tokens": 2461,
+        "total_tokens": 45406,
+        "prompt_tokens_details": {
+          "cached_tokens": 9
+        },
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "reasoning_tokens": 474,
+          "rejected_prediction_tokens": null
+        }
+      },
+      "cost": null,
+      "elapsed_seconds": 43.218,
+      "error": null
+    },
+    {
+      "artifact": "round_01/B_response.json",
+      "model": "glm-5.3",
+      "ok": false,
+      "started_at": "2026-10-16T01:42:28.538907+00:00",
+      "response_id": "chatcmpl-9576a93c",
+      "session_id": "kbs-task1-v2-r1-B",
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "request_parameters": null,
+      "thinking_requested": "auto",
+      "prompt_sha256": "d4f589101bb4b042883c9702fca73ab54c67d94c4f49f73ecc318b1b6ff9fe0c",
+      "image_sha256": null,
+      "http_status": 200,
+      "finish_reason": "length",
+      "usage": {
+        "prompt_tokens": 42400,
+        "completion_tokens": 14000,
+        "total_tokens": 56400,
+        "prompt_tokens_details": {
+          "cached_tokens": 9
+        },
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "reasoning_tokens": 14001,
+          "rejected_prediction_tokens": null
+        }
+      },
+      "cost": null,
+      "elapsed_seconds": 299.531,
+      "error": "ValueError: No usable final text returned"
+    },
+    {
+      "artifact": "round_01/C_direct_response.json",
+      "model": "qwen3.8-max",
+      "ok": true,
+      "started_at": "2026-10-16T01:48:42.217859+00:00",
+      "response_id": "chatcmpl-ded322f3-e1c0-4058-8624-715c62ecbe04",
+      "session_id": "kbs-task1-v2-r1-C",
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "request_parameters": null,
+      "thinking_requested": "auto",
+      "prompt_sha256": "2550295a7c5bdb4f5714c742f2243ebd18dff68ba39c7006474e79a10cd919c6",
+      "image_sha256": null,
+      "http_status": 200,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 49008,
+        "completion_tokens": 1865,
+        "total_tokens": 50873,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "cost": null,
+      "elapsed_seconds": 44.14,
+      "error": null
+    },
+    {
+      "artifact": "round_01/C_response.json",
+      "model": "qwen3.8-max",
+      "ok": false,
+      "started_at": "2026-10-16T01:42:28.541915+00:00",
+      "response_id": null,
+      "session_id": "kbs-task1-v2-r1-C",
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "request_parameters": null,
+      "thinking_requested": "auto",
+      "prompt_sha256": "d81c6f16ccba547eb3496cf576c7622dec4ce16b853808bd474f9e7a75dff58b",
+      "image_sha256": null,
+      "http_status": null,
+      "finish_reason": null,
+      "usage": null,
+      "cost": null,
+      "elapsed_seconds": 300.359,
+      "error": "TimeoutError: The read operation timed out"
+    },
+    {
+      "artifact": "round_01/D_google_response.json",
+      "model": "gemini-4-argon-contributor",
+      "ok": true,
+      "started_at": "2026-10-16T01:43:47.791119+00:00",
+      "response_id": "VIHRar3pK5fy-8YP6ommaA",
+      "session_id": "kbs-task1-v2-r1-D",
+      "endpoint": "https://opencode.ai/inference/go/google/v1beta/models/gemini-4-argon-contributor:generateContent",
+      "request_parameters": null,
+      "thinking_requested": "auto",
+      "prompt_sha256": "c47de0d5cb7e3a09ce586f549552f727870f26c90f2b332566258e29b9641f44",
+      "image_sha256": {
+        "injected_by_relation.png": "087e333741109512ba50e3167ac4132d26a68dcf61d8afef0fbda4dc305bb0da",
+        "injected_by_type.png": "b43e15f478f6c4d792c122d8e2a945a2487ca85f9860e34741bae3d8e9fbfc0c"
+      },
+      "http_status": 200,
+      "finish_reason": "stop",
+      "usage": {
+        "candidatesTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 2079
+          }
+        ],
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 37017
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 2217
+          }
+        ],
+        "candidatesTokenCount": 2079,
+        "promptTokenCount": 39234,
+        "totalTokenCount": 41313
+      },
+      "cost": null,
+      "elapsed_seconds": 28.75,
+      "error": null
+    },
+    {
+      "artifact": "round_01/D_response.json",
+      "model": "gemini-4-argon-contributor",
+      "ok": false,
+      "started_at": "2026-10-16T01:42:28.467670+00:00",
+      "response_id": null,
+      "session_id": "kbs-task1-v2-r1-D",
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "request_parameters": null,
+      "thinking_requested": "auto",
+      "prompt_sha256": "cd9041412c273b012c920c9bba0cc89c9aa5f87820d69a100df3198d4c131208",
+      "image_sha256": {
+        "injected_by_relation.png": "087e333741109512ba50e3167ac4132d26a68dcf61d8afef0fbda4dc305bb0da",
+        "injected_by_type.png": "b43e15f478f6c4d792c122d8e2a945a2487ca85f9860e34741bae3d8e9fbfc0c"
+      },
+      "http_status": 400,
+      "finish_reason": null,
+      "usage": null,
+      "cost": null,
+      "elapsed_seconds": 0.906,
+      "error": "HTTP 400: {\"type\":\"error\",\"error\":{\"type\":\"ModelProtocolUnsupported\",\"message\":\"Model does not support this protocol.\"}}"
+    },
+    {
+      "artifact": "round_02/A_response.json",
+      "model": "deepseek-v4-pro",
+      "ok": true,
+      "started_at": "2026-10-16T01:58:30.206838+00:00",
+      "response_id": "c7c36f9a-5c7a-4e6f-a5ab-391995632638",
+      "session_id": "kbs-task1-v2-r2-A",
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "request_parameters": {
+        "protocol": "chat",
+        "reasoning_effort": null,
+        "enable_thinking": null,
+        "max_tokens": 14000,
+        "timeout": 300.0
+      },
+      "thinking_requested": "disabled",
+      "prompt_sha256": "d72e38ed9f466d9b9b6cbb88d2a781dd7bd3c38700bcfdb70f136dea76b10ad3",
+      "image_sha256": null,
+      "http_status": 200,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 73547,
+        "completion_tokens": 3412,
+        "total_tokens": 76959,
+        "prompt_cache_hit_tokens": 0,
+        "prompt_cache_miss_tokens": 73547,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "cost": null,
+      "elapsed_seconds": 49.891,
+      "error": null
+    },
+    {
+      "artifact": "round_02/B_response.json",
+      "model": "glm-5.3",
+      "ok": true,
+      "started_at": "2026-10-16T01:58:30.205817+00:00",
+      "response_id": "chatcmpl-bea458dc",
+      "session_id": "kbs-task1-v2-r2-B",
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "request_parameters": {
+        "protocol": "chat",
+        "reasoning_effort": "low",
+        "enable_thinking": null,
+        "max_tokens": 14000,
+        "timeout": 300.0
+      },
+      "thinking_requested": "enabled",
+      "prompt_sha256": "f9b120597dedf9e5dbfe865dd3c2c775f1717c8ca90096017a066b9fe96e4358",
+      "image_sha256": null,
+      "http_status": 200,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 69795,
+        "completion_tokens": 2747,
+        "total_tokens": 72542,
+        "prompt_tokens_details": {
+          "cached_tokens": 8
+        },
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "reasoning_tokens": 239,
+          "rejected_prediction_tokens": null
+        }
+      },
+      "cost": null,
+      "elapsed_seconds": 25.344,
+      "error": null
+    },
+    {
+      "artifact": "round_02/C_response.json",
+      "model": "qwen3.8-max",
+      "ok": true,
+      "started_at": "2026-10-16T01:58:30.204294+00:00",
+      "response_id": "chatcmpl-0af3fb4f-94da-46da-8591-86b48714c1be",
+      "session_id": "kbs-task1-v2-r2-C",
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "request_parameters": {
+        "protocol": "chat",
+        "reasoning_effort": null,
+        "enable_thinking": "false",
+        "max_tokens": 14000,
+        "timeout": 300.0
+      },
+      "thinking_requested": "auto",
+      "prompt_sha256": "2a69745a95be45c489551568b2b7e32f51e4992a09ccab96d784bcb2c7bd22f7",
+      "image_sha256": null,
+      "http_status": 200,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 78676,
+        "completion_tokens": 2041,
+        "total_tokens": 80717,
+        "prompt_tokens_details": {
+          "cached_tokens": 1024
+        }
+      },
+      "cost": null,
+      "elapsed_seconds": 48.735,
+      "error": null
+    },
+    {
+      "artifact": "round_02/D_response.json",
+      "model": "gemini-4-argon-contributor",
+      "ok": true,
+      "started_at": "2026-10-16T01:58:30.147367+00:00",
+      "response_id": "x4TRavWuGNfV-8YPjsTkaA",
+      "session_id": "kbs-task1-v2-r2-D",
+      "endpoint": "https://opencode.ai/inference/go/google/v1beta/models/gemini-4-argon-contributor:generateContent",
+      "request_parameters": {
+        "protocol": "google",
+        "reasoning_effort": null,
+        "enable_thinking": null,
+        "max_tokens": 14000,
+        "timeout": 300.0
+      },
+      "thinking_requested": "auto",
+      "prompt_sha256": "d499b06c2d682b9351c5e02757414d8ed762ccbf9dc4c44930338439f46c3727",
+      "image_sha256": {
+        "injected_by_relation.png": "087e333741109512ba50e3167ac4132d26a68dcf61d8afef0fbda4dc305bb0da",
+        "injected_by_type.png": "b43e15f478f6c4d792c122d8e2a945a2487ca85f9860e34741bae3d8e9fbfc0c"
+      },
+      "http_status": 200,
+      "finish_reason": "stop",
+      "usage": {
+        "candidatesTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 2813
+          }
+        ],
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 68653
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 2217
+          }
+        ],
+        "candidatesTokenCount": 2813,
+        "promptTokenCount": 70870,
+        "totalTokenCount": 73683
+      },
+      "cost": null,
+      "elapsed_seconds": 40.203,
+      "error": null
+    },
+    {
+      "artifact": "round_03/A_response.json",
+      "model": "deepseek-v4-pro",
+      "ok": true,
+      "started_at": "2026-10-16T02:01:56.859793+00:00",
+      "response_id": "5599ac15-4774-4db4-80bf-0982fb160e82",
+      "session_id": "kbs-task1-v2-closure-A",
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "request_parameters": {
+        "protocol": "chat",
+        "reasoning_effort": null,
+        "enable_thinking": null,
+        "max_tokens": 9000,
+        "timeout": 240.0
+      },
+      "thinking_requested": "disabled",
+      "prompt_sha256": "792509c3c2050a4e4a546996a2eea707b5dd837240b28c7e1fd86fb164b30d53",
+      "image_sha256": null,
+      "http_status": 200,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 22612,
+        "completion_tokens": 955,
+        "total_tokens": 23567,
+        "prompt_cache_hit_tokens": 0,
+        "prompt_cache_miss_tokens": 22612,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "cost": null,
+      "elapsed_seconds": 14.469,
+      "error": null
+    },
+    {
+      "artifact": "round_03/B_response.json",
+      "model": "glm-5.3",
+      "ok": true,
+      "started_at": "2026-10-16T02:01:56.860792+00:00",
+      "response_id": "chatcmpl-5785a096",
+      "session_id": "kbs-task1-v2-closure-B",
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "request_parameters": {
+        "protocol": "chat",
+        "reasoning_effort": "low",
+        "enable_thinking": null,
+        "max_tokens": 9000,
+        "timeout": 240.0
+      },
+      "thinking_requested": "enabled",
+      "prompt_sha256": "057e0b5e10a8548cc0ace4620d44237719876018beaa5f82d2f0554bd308fc42",
+      "image_sha256": null,
+      "http_status": 200,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 21944,
+        "completion_tokens": 1960,
+        "total_tokens": 23904,
+        "prompt_tokens_details": {
+          "cached_tokens": 8
+        },
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "reasoning_tokens": 42,
+          "rejected_prediction_tokens": null
+        }
+      },
+      "cost": null,
+      "elapsed_seconds": 33.391,
+      "error": null
+    },
+    {
+      "artifact": "round_03/C_response.json",
+      "model": "qwen3.8-max",
+      "ok": true,
+      "started_at": "2026-10-16T02:01:56.861799+00:00",
+      "response_id": "chatcmpl-482f476a-41ba-4947-b550-945a3178de29",
+      "session_id": "kbs-task1-v2-closure-C",
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "request_parameters": {
+        "protocol": "chat",
+        "reasoning_effort": null,
+        "enable_thinking": "false",
+        "max_tokens": 9000,
+        "timeout": 240.0
+      },
+      "thinking_requested": "auto",
+      "prompt_sha256": "f1f14896293d8f41de8e37d42c31a730293deb303bfc85411efda94f037db72a",
+      "image_sha256": null,
+      "http_status": 200,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 24499,
+        "completion_tokens": 1717,
+        "total_tokens": 26216,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "cost": null,
+      "elapsed_seconds": 38.579,
+      "error": null
+    },
+    {
+      "artifact": "round_03/D_response.json",
+      "model": "gemini-4-argon-contributor",
+      "ok": true,
+      "started_at": "2026-10-16T02:01:56.861799+00:00",
+      "response_id": "lYXRaq21N6ixjrEP66HJ0AQ",
+      "session_id": "kbs-task1-v2-closure-D",
+      "endpoint": "https://opencode.ai/inference/go/google/v1beta/models/gemini-4-argon-contributor:generateContent",
+      "request_parameters": {
+        "protocol": "google",
+        "reasoning_effort": null,
+        "enable_thinking": null,
+        "max_tokens": 9000,
+        "timeout": 240.0
+      },
+      "thinking_requested": "auto",
+      "prompt_sha256": "1b8774ebe3dd8c4bb869851bbe946a951da773382c9d937a452de25af0322f96",
+      "image_sha256": {
+        "injected_by_relation.png": "087e333741109512ba50e3167ac4132d26a68dcf61d8afef0fbda4dc305bb0da",
+        "injected_by_type.png": "b43e15f478f6c4d792c122d8e2a945a2487ca85f9860e34741bae3d8e9fbfc0c"
+      },
+      "http_status": 200,
+      "finish_reason": "stop",
+      "usage": {
+        "candidatesTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 1739
+          }
+        ],
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 26101
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 2217
+          }
+        ],
+        "candidatesTokenCount": 1739,
+        "promptTokenCount": 28318,
+        "thoughtsTokenCount": 55,
+        "totalTokenCount": 30112
+      },
+      "cost": null,
+      "elapsed_seconds": 23.063,
+      "error": null
+    },
+    {
+      "artifact": "round_04/A_response.json",
+      "model": "deepseek-v4-pro",
+      "ok": true,
+      "started_at": "2026-10-16T02:08:35.839441+00:00",
+      "response_id": "c6c769c7-8c47-4501-b858-67d69c4c2fdc",
+      "session_id": "kbs-task1-v2-label-closure-A",
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "request_parameters": {
+        "protocol": "chat",
+        "reasoning_effort": null,
+        "enable_thinking": null,
+        "max_tokens": 9000,
+        "timeout": 240.0
+      },
+      "thinking_requested": "disabled",
+      "prompt_sha256": "30a8ecb04fde3b5d7c57617b8febee62f6b610a2a43a8c67f00c228175af9b59",
+      "image_sha256": null,
+      "http_status": 200,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 16790,
+        "completion_tokens": 816,
+        "total_tokens": 17606,
+        "prompt_cache_hit_tokens": 0,
+        "prompt_cache_miss_tokens": 16790,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "cost": null,
+      "elapsed_seconds": 14.469,
+      "error": null
+    },
+    {
+      "artifact": "round_04/B_response.json",
+      "model": "glm-5.3",
+      "ok": true,
+      "started_at": "2026-10-16T02:08:35.839441+00:00",
+      "response_id": "chatcmpl-f0429b39",
+      "session_id": "kbs-task1-v2-label-closure-B",
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "request_parameters": {
+        "protocol": "chat",
+        "reasoning_effort": "low",
+        "enable_thinking": null,
+        "max_tokens": 9000,
+        "timeout": 240.0
+      },
+      "thinking_requested": "enabled",
+      "prompt_sha256": "2fa5e2727c712fbdfb21b6e26a8c650282444e87185162471b90189ea6cb09a6",
+      "image_sha256": null,
+      "http_status": 200,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 16034,
+        "completion_tokens": 1606,
+        "total_tokens": 17640,
+        "prompt_tokens_details": {
+          "cached_tokens": 8
+        },
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": null,
+          "reasoning_tokens": 0,
+          "rejected_prediction_tokens": null
+        }
+      },
+      "cost": null,
+      "elapsed_seconds": 30.328,
+      "error": null
+    },
+    {
+      "artifact": "round_04/C_response.json",
+      "model": "qwen3.8-max",
+      "ok": true,
+      "started_at": "2026-10-16T02:08:35.838442+00:00",
+      "response_id": "chatcmpl-3cff1bad-c408-47e4-8940-c27f3a73c312",
+      "session_id": "kbs-task1-v2-label-closure-C",
+      "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+      "request_parameters": {
+        "protocol": "chat",
+        "reasoning_effort": null,
+        "enable_thinking": "false",
+        "max_tokens": 9000,
+        "timeout": 240.0
+      },
+      "thinking_requested": "auto",
+      "prompt_sha256": "e9ce95c9bf4ba496626a5177a1043dd78e8f0b17586209584cca56721b984c45",
+      "image_sha256": null,
+      "http_status": 200,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 17954,
+        "completion_tokens": 796,
+        "total_tokens": 18750,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "cost": null,
+      "elapsed_seconds": 21.359,
+      "error": null
+    },
+    {
+      "artifact": "round_04/D_response.json",
+      "model": "gemini-4-argon-contributor",
+      "ok": true,
+      "started_at": "2026-10-16T02:08:35.837443+00:00",
+      "response_id": "JIfRaoiTK4Ka_uMPh6be2Aw",
+      "session_id": "kbs-task1-v2-label-closure-D",
+      "endpoint": "https://opencode.ai/inference/go/google/v1beta/models/gemini-4-argon-contributor:generateContent",
+      "request_parameters": {
+        "protocol": "google",
+        "reasoning_effort": null,
+        "enable_thinking": null,
+        "max_tokens": 9000,
+        "timeout": 240.0
+      },
+      "thinking_requested": "auto",
+      "prompt_sha256": "c5f14db53f0bf054157812d3d1765b978faa68647d07ae5511936250ba7ab0b5",
+      "image_sha256": {
+        "injected_by_relation.png": "087e333741109512ba50e3167ac4132d26a68dcf61d8afef0fbda4dc305bb0da",
+        "injected_by_type.png": "b43e15f478f6c4d792c122d8e2a945a2487ca85f9860e34741bae3d8e9fbfc0c"
+      },
+      "http_status": 200,
+      "finish_reason": "stop",
+      "usage": {
+        "candidatesTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 1171
+          }
+        ],
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 19540
+          },
+          {
+            "modality": "IMAGE",
+            "tokenCount": 2217
+          }
+        ],
+        "candidatesTokenCount": 1171,
+        "promptTokenCount": 21757,
+        "totalTokenCount": 22928
+      },
+      "cost": null,
+      "elapsed_seconds": 17.719,
+      "error": null
+    }
+  ],
+  "request_count": 23,
+  "successful_count": 19,
+  "failed_count": 4,
+  "catalog_requests": 2,
+  "actual_cost_note": "No actual charge returned by API. Null cost is unavailable, not zero. Published Go prices in model_inventory.json are accounting references, not observed billing. Timeout request may still consume provider quota.",
+  "credentials_recorded": false,
+  "paid_provider_fallback": false
+}

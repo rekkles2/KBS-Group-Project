@@ -1,0 +1,35 @@
+[
+  {
+    "snapshot": "Dec2021",
+    "nodes": 6784,
+    "edges": 7053,
+    "synthetic_edges": 642,
+    "overlay_nodes": 6,
+    "dangling_edges": 0,
+    "nodes_labeled_fake": 0,
+    "cli_exit": 0,
+    "cli_stdout": "{\"snapshot\": \"Dec2021\", \"nodes\": 6784, \"edges\": 7053}"
+  },
+  {
+    "snapshot": "Dec2023",
+    "nodes": 6967,
+    "edges": 7241,
+    "synthetic_edges": 649,
+    "overlay_nodes": 1,
+    "dangling_edges": 0,
+    "nodes_labeled_fake": 0,
+    "cli_exit": 0,
+    "cli_stdout": "{\"snapshot\": \"Dec2023\", \"nodes\": 6967, \"edges\": 7241}"
+  },
+  {
+    "snapshot": "March2024",
+    "nodes": 7090,
+    "edges": 7011,
+    "synthetic_edges": 609,
+    "overlay_nodes": 4,
+    "dangling_edges": 0,
+    "nodes_labeled_fake": 0,
+    "cli_exit": 0,
+    "cli_stdout": "{\"snapshot\": \"March2024\", \"nodes\": 7090, \"edges\": 7011}"
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "selected_hubs_independently_ranked": 206,
+  "original_prefix_preserved": true,
+  "injected_triples_and_all_previous_provenance_unchanged": true,
+  "fake_edges": 774,
+  "fake_original_edges": 0,
+  "fake_nodes": 0,
+  "legacy_statuses": {
+    "unverified": 774
+  },
+  "v2_statuses": {
+    "unresolved": 774
+  },
+  "input_sha256": {
+    "graph": "f5a1c2f4b556bf060e89540ab1b5c05f836afe29cc0f13cdcd80f92120171f31",
+    "entity_csv": "c653dde9d87f61295dac67aac1151d5510c7d6b9c0081ada82b31ea1f053be2e"
+  }
+}

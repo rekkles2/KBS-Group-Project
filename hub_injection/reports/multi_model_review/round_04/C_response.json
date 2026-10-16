@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "model": "qwen3.8-max",
+  "session_id": "kbs-task1-v2-label-closure-C",
+  "thinking_requested": "auto",
+  "request_parameters": {
+    "protocol": "chat",
+    "reasoning_effort": null,
+    "enable_thinking": "false",
+    "max_tokens": 9000,
+    "timeout": 240.0
+  },
+  "started_at": "2026-10-16T02:08:35.838442+00:00",
+  "prompt_sha256": "e9ce95c9bf4ba496626a5177a1043dd78e8f0b17586209584cca56721b984c45",
+  "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+  "http_status": 200,
+  "response_id": "chatcmpl-3cff1bad-c408-47e4-8940-c27f3a73c312",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 17954,
+    "completion_tokens": 796,
+    "total_tokens": 18750,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    }
+  },
+  "cost": null,
+  "text": "{\"reviewer_model\":\"qwen3.8-max\",\"overall_verdict\":\"PASS\",\"blocking_findings\":[],\"major_findings\":[],\"minor_findings\":[\"verify_delivery.py references an absolute Windows path (E:/DevSpaceProjects/.opencode-local/api_key.txt) for credential scanning, which will silently skip on non-Windows systems or different workspaces. Consider making this configurable or relative to the project root.\",\"The synthetic_class column in edge_injection_labels.csv uses the string 'fake' to denote construction origin. While metadata and docstrings clearly separate this from factual falsity, downstream consumers parsing CSVs without reading documentation might conflate the two. A value like 'synthetic_injected' could reduce ambiguity, though current semantics are internally consistent.\"],\"verified_checks\":[\"Edge label count: 8511 rows in edge_injection_labels.csv matches len(augmented['edges']) exactly.\",\"Synthetic edge labels: 774 edges have is_synthetic_edge=1 and synthetic_class='fake', matching manifest actual_injected_edges.\",\"Original edge labels: 7737 edges have is_synthetic_edge=0, synthetic_class='original', factual_verification_status='not_adjudicated'.\",\"Node identity labels: All 7868 nodes have is_synthetic_node=0. No original entity was relabeled as fake or fictitious.\",\"Node participation labels: Exactly 654 nodes have incident_to_synthetic_edge=1, matching manifest nodes_incident_to_synthetic_edges.\",\"Degree consistency: synthetic_in_degree + synthetic_out_degree equals synthetic_total_degree for all nodes; sum of total degrees equals 2 * 774 = 1548 (each injected edge contributes 1 in, 1 out).\",\"Factual verification separation: All 774 injected edges carry factual_verification_status='unresolved' in labels, distinct from synthetic_class='fake'. Manifest confirms verified_false=0, unresolved=774.\",\"Original graph preservation: verify_delivery.py checks confirm original nodes, questions, relations, unresolved_paths, and edge prefix are byte-identical to input.\",\"Determinism: portable_reproduction.json confirms two independent clean runs produce byte-identical SHA-256 hashes for all six output files including both new CSVs.\",\"Test suite: 53/53 tests passed, 0 skipped, including test_training_labels.py verifying incidence separation and empty overlay behavior.\",\"Code logic review: export_training_labels.py correctly derives original_nodes via set comprehension, counts incoming/outgoing synthetic degrees via Counter, and writes sorted node rows deterministically.\"],\"unsupported_claims\":[],\"recommended_fixes\":[\"Parameterize the API key path in verify_delivery.py or wrap it in a platform-aware check to ensure portability across environments.\",\"Consider adding a brief README section specifically mapping CSV column names to their semantic definitions for downstream ML practitioners who may not read injection_manifest.json metadata.\"],\"evidence_references\":[\"src/export_training_labels.py lines 1-35\",\"outputs/injection_manifest.json training_labels block\",\"reports/revision_audit/portable_reproduction.json canonical_output_sha256\",\"tests/test_training_labels.py TrainingLabelTests\",\"tools/verify_delivery.py all_node_training_labels_align_with_injected_endpoints check\",\"LABEL RECORD SAMPLES node_injection_labels.csv and edge_injection_labels.csv\"],\"remaining_uncertainty\":[\"Downstream model training efficacy using these specific binary labels has not been evaluated; this is explicitly out of scope for Task 1 but remains an open question for Task 2.\",\"The 654 participating nodes represent endpoints of injected edges; whether this specific subset introduces unintended topological bias for GNN message passing beyond the documented structural metrics is unquantified.\",\"External factual verification covered only 86/774 claims via purposive sampling; while all remain officially 'unresolved', the true positive/negative rate of the synthetic overlay against real-world Wikidata state at any given timestamp remains unknown.\"]}",
+  "elapsed_seconds": 21.359
+}

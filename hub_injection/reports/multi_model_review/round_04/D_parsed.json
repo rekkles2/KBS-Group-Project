@@ -1,0 +1,44 @@
+{
+  "reviewer_model": "gemini-4-argon-contributor",
+  "overall_verdict": "PASS",
+  "blocking_findings": [],
+  "major_findings": [],
+  "minor_findings": [
+    {
+      "id": "MIN-R4-01",
+      "category": "schema_ergonomics",
+      "description": "In `edge_injection_labels.csv`, `synthetic_class` ('fake' vs 'original') is a 1:1 redundant encoding of `is_synthetic_edge` (1 vs 0). However, it aligns with `edge['value'] == 'fake'` in the JSON graph and is explicitly documented as a construction label rather than verified falsity, so it poses no semantic conflict."
+    }
+  ],
+  "verified_checks": [
+    "Canonical training label exporter (`src/export_training_labels.py`) cleanly separates node identity (`is_synthetic_node`), node participation in injected edges (`incident_to_synthetic_edge`, `synthetic_in_degree`, `synthetic_out_degree`, `synthetic_total_degree`), edge construction origin (`is_synthetic_edge`, `synthetic_class`), and factual adjudication (`factual_verification_status`).",
+    "Original entity objects in `augmented['nodes']` remain completely unmutated; no real Wikidata node is relabeled as `fake`, and `synthetic_nodes` is verified as 0 across all 7,868 nodes (`is_synthetic_node` == 0 for all rows).",
+    "Node participation labels accurately identify the 654 nodes incident to at least one synthetic edge (`incident_to_synthetic_edge` == 1), with exact degree breakdowns summing to total synthetic incidence.",
+    "Edge training labels cover all 8,511 directed edges in exact index order: 7,737 original edges (`is_synthetic_edge` == 0, `synthetic_class` == 'original', `factual_verification_status` == 'not_adjudicated') and 774 injected edges (`is_synthetic_edge` == 1, `synthetic_class` == 'fake', `factual_verification_status` == 'unresolved').",
+    "`augment_graph` in `src/inject_misinformation.py` adds only the `label_tables` metadata pointer dictionary under `metadata.task1_hub_injection` without altering original nodes, original edges, injected triples, provenance, or sampling behavior.",
+    "All 53 unit and integration tests pass (`reports/tests_summary.json`, including the 2 new tests in `tests/test_training_labels.py`) with 0 skips, 0 failures, and 0 errors.",
+    "Two clean independent runs in `reports/revision_audit/portable_reproduction.json` produce byte-identical SHA-256 hashes across all 6 output artifacts (`pat_kg_poisoned_10pct.json`, `injected_edges.jsonl`, `hub_nodes.csv`, `injection_manifest.json`, `edge_injection_labels.csv`, `node_injection_labels.csv`).",
+    "`tools/verify_delivery.py` enforces end-to-end alignment between the serialized graph, manifest hashes, source code hashes, and every row/column of both CSV label tables.",
+    "Visual inspection of both attached PNG renders (`injected_by_relation.svg` and `injected_by_type.svg`) confirms clean typography, accurate bar proportions, explicit subtitle disclaimers ('Synthetic injection counts; not verified factual falsity. Unique triples.'), and exact category sums totaling 774 (18 relations summing to 774; 23 entity types summing to 774)."
+  ],
+  "unsupported_claims": [],
+  "recommended_fixes": [],
+  "evidence_references": [
+    "src/export_training_labels.py:write_training_labels",
+    "src/inject_misinformation.py:augment_graph",
+    "run_task1.py:run",
+    "tests/test_training_labels.py:TrainingLabelTests",
+    "tools/verify_delivery.py:main",
+    "outputs/injection_manifest.json:training_labels",
+    "outputs/injection_manifest.json:output_sha256",
+    "reports/tests_summary.json",
+    "reports/revision_audit/portable_reproduction.json",
+    "reports/FINAL_REPORT_v2.md",
+    "Attached PNG 1: Injected triples by relation (18 bars summing to 774)",
+    "Attached PNG 2: Injected triples by swapped general entity type (23 bars summing to 774)"
+  ],
+  "remaining_uncertainty": [
+    "All 774 synthetic triples remain factually 'unresolved' (with 86/774 purposively checked against live Wikidata and 688 unchecked), which is transparently documented and properly distinguished from synthetic construction labels.",
+    "Downstream Task 2 GNN/KGQA training consumption of `edge_injection_labels.csv` and `node_injection_labels.csv` has not been executed in Task 1, which is out of scope for this dataset generation task."
+  ]
+}

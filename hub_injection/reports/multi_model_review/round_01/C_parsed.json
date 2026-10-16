@@ -1,0 +1,114 @@
+{
+  "reviewer_model": "qwen3.8-max",
+  "overall_verdict": "PASS",
+  "blocking_findings": [],
+  "major_findings": [
+    {
+      "file": "src/inject_misinformation.py",
+      "function_or_field": "balanced_sample",
+      "record_or_line": "38-39",
+      "problem": "Candidates within each relation bucket are sorted deterministically by triple then immediately shuffled with the seeded RNG, making the sort dead code and obscuring the actual selection order.",
+      "concrete_evidence_or_counterexample": "Line 38: `buckets[kind][relation].sort(key=triple)` followed by line 39: `rng.shuffle(buckets[kind][relation])`. The sort has no effect on the output because shuffle randomizes the list in place before any `.pop()` calls. Determinism relies entirely on the seed, not the sort.",
+      "severity": "medium",
+      "repair_or_test": "Remove the redundant sort or document that it exists solely for pre-shuffle auditability. Add a unit test confirming that removing the sort produces identical byte-level output under the same seed."
+    },
+    {
+      "file": "run_task1.py",
+      "function_or_field": "run",
+      "record_or_line": "62-64",
+      "problem": "Source code SHA-256 manifest only hashes files directly inside `src/` and `run_task1.py`, omitting all scripts under `tools/` and `tests/` that are part of the delivered reproduction pipeline.",
+      "concrete_evidence_or_counterexample": "Lines 62-64 iterate `(ROOT / 'src').glob('*.py')` and add `run_task1.py`. Tools like `analyze_structure_v2.py`, `audit_facts_v2.py`, `package_release_v2.py`, and `export_snapshot_v2.py` are excluded from `source_code_sha256` in `outputs/injection_manifest.json`. A tampered tool would not be detected by manifest verification.",
+      "severity": "medium",
+      "repair_or_test": "Extend source hashing to include `tools/*.py` and `tests/*.py`, or explicitly document that the manifest covers only the generation pipeline and not diagnostic/test scripts."
+    }
+  ],
+  "minor_findings": [
+    {
+      "file": "src/compute_degrees.py",
+      "function_or_field": "compute_degrees",
+      "record_or_line": "7-9",
+      "problem": "No defensive check for edges referencing nodes absent from the graph. While `validate_original` catches this earlier, `compute_degrees` will raise an unhandled KeyError if called independently on malformed input.",
+      "concrete_evidence_or_counterexample": "Lines 8-9 access `degrees[edge['source']]` and `degrees[edge['target']]` directly. If an edge contains a dangling reference, this crashes rather than returning a diagnostic.",
+      "severity": "low",
+      "repair_or_test": "Add a guard or rely on documented precondition that inputs must pass validation first."
+    },
+    {
+      "file": "src/report_statistics.py",
+      "function_or_field": "injection_statistics",
+      "record_or_line": "47-48",
+      "problem": "Hub pair and changed positions keys use `'|'.join(...)` which could theoretically collide if QIDs or position strings contained pipe characters, though current schemas prevent this.",
+      "concrete_evidence_or_counterexample": "Line 47: `'by_hub_pair': dict(sorted(Counter('|'.join(e['injection_provenance']['hub_pair']) for e in edges).items()))`. Safe under current QID regex but fragile if schema evolves.",
+      "severity": "low",
+      "repair_or_test": "Use tuple keys or a delimiter guaranteed absent from identifiers."
+    },
+    {
+      "file": "tests/test_reproducibility.py",
+      "function_or_field": "ActualDatasetIntegrationTests",
+      "record_or_line": "28",
+      "problem": "The 180-second timeout per subprocess run may be insufficient on slower CI hardware, causing flaky test failures unrelated to correctness.",
+      "concrete_evidence_or_counterexample": "Line 28: `timeout=180`. Three sequential runs means up to 9 minutes just for timeout exhaustion.",
+      "severity": "low",
+      "repair_or_test": "Make timeout configurable via environment variable or increase default for CI contexts."
+    }
+  ],
+  "verified_checks": [
+    {
+      "check": "Exact budget computation: injection_budget(7737, '0.10') == 774 via ROUND_HALF_EVEN",
+      "evidence": "src/inject_misinformation.py:14-18; tests/test_injection.py:15-16; outputs/injection_manifest.json target_injected_edges=774"
+    },
+    {
+      "check": "Deterministic byte-identical reproduction across two seed-42 runs",
+      "evidence": "tests/test_reproducibility.py:47-52; reports/revision_audit/portable_reproduction.json two_clean_runs_byte_identical=true with matching SHA-256 hashes"
+    },
+    {
+      "check": "All 774 injected edges carry value='fake' and factual_verification.status='unresolved'",
+      "evidence": "src/inject_misinformation.py:68; src/factual_verification.py:49; synthetic record samples; reports/validation_results.json checks passed"
+    },
+    {
+      "check": "Original graph objects preserved exactly (nodes, relations, questions, unresolved_paths, edge prefix)",
+      "evidence": "src/inject_misinformation.py:96-97; tests/test_reproducibility.py:65-70; reports/validation_results.json preserved_nodes=true, preserved_original_edges_in_order=true"
+    },
+    {
+      "check": "Pairwise transposition applied to both endpoints verified independently",
+      "evidence": "src/validate_poisoned.py:64-68; tests/test_injection.py:22-29; reports/validation_results.json pairwise_permutation_both_endpoints=true"
+    },
+    {
+      "check": "Snapshot visibility adapter activates only missing observations without mutating original node lists",
+      "evidence": "src/snapshot_visibility.py:18-19; tests/test_revision_schema.py:29-47; reports/revision_audit/structural_support.md activation counts match baseline audit violations resolved"
+    },
+    {
+      "check": "Adversarial tampering detection (altered provenance, wrong label, invented validity fields)",
+      "evidence": "tests/test_injection.py:59-66; tests/test_revision_schema.py:62-63; tests/test_temporal_semantics.py:36-42; src/validate_poisoned.py:90-93 exact field whitelist"
+    },
+    {
+      "check": "Portable packaging excludes credentials, caches, and original datasets while recording input SHA-256",
+      "evidence": "tools/package_release_v2.py:15-17,30-34; tests/test_portable_v2.py:14-37"
+    },
+    {
+      "check": "QA positive triple exclusion prevents injecting known conservatively projectable facts",
+      "evidence": "src/generate_candidates.py:70-71; src/validate_original.py:11-37; tests/test_injection.py:48-57 multiple intermediate guard"
+    },
+    {
+      "check": "Role/direction compatibility enforced via empirical donor evidence signatures",
+      "evidence": "src/generate_candidates.py:64-67; src/validate_poisoned.py:72-76; outputs/injection_manifest.json rejected_by_reason shows missing_source/target_donor_evidence rejections"
+    }
+  ],
+  "unsupported_claims": [],
+  "recommended_fixes": [
+    "Include tools/ and tests/ Python files in the source_code_sha256 manifest or explicitly scope the manifest to generation-only code.",
+    "Remove the dead sort in balanced_sample or document its purpose as pre-shuffle audit trail.",
+    "Parameterize the subprocess timeout in test_reproducibility.py for cross-environment stability.",
+    "Add a standalone integration test that loads the delivered pat_kg_poisoned_10pct.json from disk and runs validate_poisoned without regenerating it, proving the shipped artifact passes independently."
+  ],
+  "evidence_references": [
+    "README.md lines 19-29 method description matches implementation",
+    "config/task1_config.json documents all defaults used in run_task1.py",
+    "run_task1.py lines 46-56 expansion loop terminates when candidates >= target or sizes stop changing",
+    "outputs/injection_manifest.json confirms 9853 candidates, 774 injected, 0 expansion rounds needed",
+    "reports/validation_results.json shows all 30 checks passed including serialized_graph_equals_generated_graph",
+    "reports/revision_audit/portable_reproduction.json proves clean regeneration matches delivered outputs byte-for-byte",
+    "reports/revision_audit/00_baseline_audit.md documents v1 snapshot mismatches now resolved by v2 visibility adapter",
+    "Synthetic record samples demonstrate complete provenance chain with correct swap semantics"
+  ],
+  "remaining_uncertainty": "The 9853 candidate pool size depends on the specific input graph topology; I cannot independently verify the exact count without executing the pipeline against the real dataset. The structural diagnostics in analyze_structure_v2.py use undirected projections that may obscure directed-relation-specific effects, but this is explicitly documented as a limitation rather than a claim. The external Wikidata audit covered only 40 subjects (86 edges) purposively sampled; full coverage was not attempted and is correctly documented as non-exhaustive. No formal JSON Schema (e.g., JSON Schema draft 2020-12) document is provided; validation is implemented procedurally in validate_poisoned.py with an exact field whitelist check at line 90-93."
+}

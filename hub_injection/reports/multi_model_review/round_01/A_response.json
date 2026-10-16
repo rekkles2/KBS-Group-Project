@@ -1,0 +1,28 @@
+{
+  "ok": false,
+  "model": "deepseek-v4-pro",
+  "session_id": "kbs-task1-v2-r1-A",
+  "thinking_requested": "auto",
+  "started_at": "2026-10-16T01:42:28.491770+00:00",
+  "prompt_sha256": "fba4fdd56896250afa0f1f7e9bb3df9492ae181ecd56527c81e8a536aa1aa482",
+  "endpoint": "https://opencode.ai/zen/go/v1/chat/completions",
+  "http_status": 200,
+  "response_id": "656aa828-c28a-406d-857b-ef699c498e88",
+  "finish_reason": "length",
+  "usage": {
+    "prompt_tokens": 45139,
+    "completion_tokens": 13999,
+    "total_tokens": 59138,
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 45139,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 13999
+    }
+  },
+  "cost": null,
+  "error": "ValueError: No usable final text returned",
+  "elapsed_seconds": 187.578
+}
